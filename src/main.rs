@@ -1,6 +1,7 @@
 extern crate chrono;
 use chrono::prelude::*; // Utc, Local
 use chrono::Date;
+use chrono::format::*; // parse
 
 use std::io;
 use std::convert;
@@ -13,36 +14,56 @@ fn get_month() {
     println!("It is {}", month.format("%B, %Y"))
 }
 
-fn get_day() {
-    let now = Local::now();
+fn get_day(storage: &Vec<TaskItem>) {
+    let now = Local::now().date();
     // let today = Local::now().day();
-    println!("Today is {}", now.format("%a %B %e"))
+    println!("Today is {}", now.format("%a %B %e"));
+    let mut found = false;
+    if storage.len() > 0 {
+        for i in 0..storage.len() {
+            if storage[i].start == now {
+                found = true;
+                println!("{:?}", storage[i])
+            }
+        }
+        if !found {
+            println!("No tasks found today");
+        }
+    }
 //    println!("Today is {:?}, the {} day of {}", now.weekday(), now.day(), now.month())
+
 }
 
 fn make_task_weekday(day: &str) {
     println!("Trying to make a task for {}", day)
 }
 
-fn make_task_monthday(day: u32) {
+fn make_parse(date: &str) -> Result<TaskItem, chrono::ParseError> {
+    //let parse = NaiveDateTime::parse_from_str(date, "%Y-%d-%d"); // the error is somewhere in here
+    let parse = Local.datetime_from_str(date, "%Y-%d-%d");
+    match parse {
+        Ok(dt) => {
+            //let start = Local.from_local_datetime(&naive);
+
+            //let start = DateTime::<Utc>::from_utc(naive, Utc);
+            Ok(unsafe { TaskItem::new(dt.date()) })
+        },
+        Err(e) => Err(e)
+    }
+}
+
+fn make_task_monthday(day: u32) -> TaskItem {
     let today = Local::now().date();
     let start = Local.ymd(today.year(), today.month(), day);
-    let task = TaskItem::new(start);
+    let task = unsafe { TaskItem::new(start) };
+    //println!("today {:?}, start {:?}", today, start);
     println!("new task: {:?}", task);
+    task
 }
 
 fn main() {
-    let mut task = TaskItem {
-        start: Local.ymd(2019, 3, 3),
-//        start: NaiveDate::from_ymd(2019, 3, 3),
-        repetition: Repetition::Daily,
-        title: String::from("Test Task"),
-        note: String::from("Just a note"),
-        // completed: [],
-        finished: false,
-    };
+    let mut storage: Vec<TaskItem> = vec![];
 
-    println!("test task: {:?}", task);
 
     loop {
 
@@ -52,21 +73,33 @@ fn main() {
            .expect("Failed to read line");
         let cmd: Vec<&str> = command.trim().split(' ').collect();
         println!("{:?}", cmd);
-        if (cmd.len() >= 1) {
+        if cmd.len() >= 1 {
             match cmd[0] {
                 "month" => get_month(),
-                "today" => get_day(),
+                "today" => get_day(&storage),
                 "make" => {
-                    if (cmd.len() >= 2) {
+                    if cmd.len() >= 2 {
                         let day: u32 = String::from(cmd[1]).parse()
                             .expect("Usage: make <day>");
-                        make_task_monthday(day);
+                        let task = make_task_monthday(day);
+                        storage.push(task)
                     } else {
                         println!("Usage: make <day>")
                     }
                 }
+                "parse" => {
+                if cmd.len() >= 2 {
+                    let parsed_task = make_parse(cmd[1]);
+                    match parsed_task {
+                        Ok(task) => storage.push(task),
+                        Err(e) => println!("{}", e),
+                    }
+                } else {
+                    println!("Usage: \"parse <YYYY-MM-DD>\"")
+                }
+                }
                 "break" | "quit" | "exit" => break,
-                &_ => println!("Unknown command: \"{}\"", &command),
+                &_ => println!("Unknown command: \"{}\"", cmd[0]),
             }
         }
     }
