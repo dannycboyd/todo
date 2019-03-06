@@ -39,14 +39,12 @@ fn make_task_weekday(day: &str) {
 }
 
 fn make_parse(date: &str) -> Result<TaskItem, chrono::ParseError> {
-    //let parse = NaiveDateTime::parse_from_str(date, "%Y-%d-%d"); // the error is somewhere in here
-    let parse = Local.datetime_from_str(date, "%Y-%d-%d");
-    match parse {
-        Ok(dt) => {
-            //let start = Local.from_local_datetime(&naive);
-
-            //let start = DateTime::<Utc>::from_utc(naive, Utc);
-            Ok(unsafe { TaskItem::new(dt.date()) })
+    let date_only = NaiveDate::parse_from_str(date, "%Y-%m-%d");
+    let error = false;
+    match date_only {
+        Ok(date) => {
+            let start = Local.ymd(date.year(), date.month(), date.day());
+            unsafe { Ok(TaskItem::new(start)) }
         },
         Err(e) => Err(e)
     }
