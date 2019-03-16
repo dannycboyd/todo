@@ -34,12 +34,35 @@ fn get_day(storage: &Vec<TaskItem>) {
 
 }
 
+fn show_id(cmd: Vec<&str>, storage: &Vec<TaskItem>) {
+    if cmd.len() >= 2 {
+        let search_id: u32 = String::from(cmd[1]).parse()
+            .expect("Usage: show <task_id>");
+        if storage.len() > 0 {
+            let mut found = false;
+            for i in 0..storage.len() {
+                if storage[i].get_id() == search_id {
+                    found = true;
+                    println!("Task #{}: {:?}", search_id, storage[i]);
+                }
+            }
+            if !found {
+                println!("No tasks found for id {}", search_id)
+            }
+        }
+    } else {
+        println!("Usage: show <task_id>")
+    }
+}
+
 fn make_task_weekday(day: &str) {
     println!("Trying to make a task for {}", day)
 }
 
 fn make_parse(date: &str) -> Result<TaskItem, chrono::ParseError> {
     let date_only = NaiveDate::parse_from_str(date, "%Y-%m-%d");
+    // https://docs.rs/chrono/0.4.0/chrono/offset/trait.TimeZone.html#method.from_local_date
+    // once I'm snart I might be able to use this instead of the dumb way I've done it here
     let error = false;
     match date_only {
         Ok(date) => {
@@ -70,11 +93,14 @@ fn main() {
         io::stdin().read_line(&mut command)
            .expect("Failed to read line");
         let cmd: Vec<&str> = command.trim().split(' ').collect();
-        println!("{:?}", cmd);
+        // println!("{:?}", cmd);
         if cmd.len() >= 1 {
             match cmd[0] {
                 "month" => get_month(),
                 "today" => get_day(&storage),
+
+                "show"   => show_id(cmd, &storage),
+
                 "make" => {
                     if cmd.len() >= 2 {
                         let day: u32 = String::from(cmd[1]).parse()
@@ -86,15 +112,15 @@ fn main() {
                     }
                 }
                 "parse" => {
-                if cmd.len() >= 2 {
-                    let parsed_task = make_parse(cmd[1]);
-                    match parsed_task {
-                        Ok(task) => storage.push(task),
-                        Err(e) => println!("{}", e),
+                    if cmd.len() >= 2 {
+                        let parsed_task = make_parse(cmd[1]);
+                        match parsed_task {
+                            Ok(task) => storage.push(task),
+                            Err(e) => println!("{}", e),
+                        }
+                    } else {
+                        println!("Usage: \"parse <YYYY-MM-DD>\"")
                     }
-                } else {
-                    println!("Usage: \"parse <YYYY-MM-DD>\"")
-                }
                 }
                 "break" | "quit" | "exit" => break,
                 &_ => println!("Unknown command: \"{}\"", cmd[0]),

@@ -52,7 +52,7 @@ impl TaskItem {
         }
     }
 
-    pub fn getId(&self) -> u32 {
+    pub fn get_id(&self) -> u32 {
         self.id
     }
 }
