@@ -1,6 +1,6 @@
 extern crate chrono;
 use chrono::prelude::*; // Utc, Local
-use chrono::Date;
+use chrono::NaiveDate;
 static mut NEXT_ID: u32 = 1;
 
 #[derive(Debug)]
@@ -31,7 +31,7 @@ pub enum Repetition {
 #[derive(Debug)]
 pub struct TaskItem {
     id: u32,
-    pub start: Date<Local>,
+    pub start: NaiveDate,
     pub repetition: Repetition,
     pub title: String,
     pub note: String,
@@ -40,7 +40,7 @@ pub struct TaskItem {
 }
 
 impl TaskItem {
-    pub unsafe fn new(start: Date<Local>) -> TaskItem {
+    pub unsafe fn new(start: NaiveDate) -> TaskItem {
         NEXT_ID += 1;
         TaskItem {
             id: NEXT_ID,
