@@ -21,13 +21,29 @@ impl Cmd {
         };
     }
 
-    fn make_task(&mut self, date: NaiveDate) { // need to handle this better
-        let task = unsafe { TaskItem::new()}
-    }
+    // fn make_task(&mut self, date: NaiveDate) { // need to handle this better
+    //     let task = unsafe { TaskItem::new(date) };
+    //     self.storage.push(task)
+    // }
+
+    // fn modify_task(&mut self) {
+    //     let id = self.cmd[2].parse()?;
+    //     let mut task: TaskItem;
+    //     for i in 1..self.storage.len() {
+    //         if (self.storage[i].get_id() == id) {
+    //             match self.cmd[3] {
+    //                 "title" => self.storage[i].set_title(self.cmd[4]),
+    //                 "note" => self.storage[i].set_note(self.cmd[4]),
+    //                 &_ => println!("Unknown property {}", self.cmd[3])
+    //             };
+    //             break;
+    //         }
+    //     }
+    // }
 
     pub fn parse(&mut self) {
         match self.cmd[0].as_ref() {
-            "make" => {
+            "make" | "new" => {
                 if self.cmd.len() > 1 {
                     let mut values: Vec<u32> = vec![];
                     for i in (1..self.cmd.len()) {
@@ -47,6 +63,8 @@ impl Cmd {
                     } else if values.len() >= 2 {
                         println!("Make day-month-year: {}-{}-{}", values[0], values[1], values[2])
                     }
+                } else {
+                    println!("usage: make <day> [month [year]]")
                 }
                 // if (self.cmd.len() > 1) {
                 //     match self.cmd[1].parse() {
@@ -63,6 +81,14 @@ impl Cmd {
                     }
                 }
             },
+            // "modify" => {
+            //     if (self.cmd.len() > 3) {
+            //         match self.modify_task();
+            //     }
+            // }
+            "help" | "h" => {
+                // print out each command here
+            }
             &_ => println!("Unknown command: {}", self.cmd[0])
         }
     }

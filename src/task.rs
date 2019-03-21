@@ -55,6 +55,14 @@ impl TaskItem {
     pub fn get_id(&self) -> u32 {
         self.id
     }
+
+    pub fn set_title(&mut self, title: &str) {
+        self.title = String::from(title)
+    }
+
+    pub fn set_note(&mut self, note: &str) {
+        self.note = String::from(note)
+    }
 }
 
 //    impl TaskItem {
