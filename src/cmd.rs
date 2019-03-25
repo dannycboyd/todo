@@ -21,6 +21,31 @@ impl Cmd {
         };
     }
 
+    fn make_task(&mut self) {
+        if self.cmd.len() > 1 {
+            let mut values: Vec<u32> = vec![];
+            for i in (1..self.cmd.len()) {
+                match self.cmd[i].parse() {
+                    Ok(val) => values.push(val),
+                    Err(e) => {
+                        println!("Error: {} can't be parsed: {:?}", self.cmd[i], e);
+                        break;
+                    }
+                }
+            }
+            match Calendar::get_start(values) {
+                None => println!("Error: values entered can't be handled by Calendar::get_start()"),
+                Some(start) => {
+                    let task = unsafe { TaskItem::new(start) };
+                    println!("new task: {:?}", task);
+                    self.storage.push(task);
+                }
+            }
+        } else {
+            println!("usage: make <day> | <month> <day> [year]")
+        }
+    }
+
     // fn make_task(&mut self, date: NaiveDate) { // need to handle this better
     //     let task = unsafe { TaskItem::new(date) };
     //     self.storage.push(task)
@@ -44,28 +69,7 @@ impl Cmd {
     pub fn parse(&mut self) {
         match self.cmd[0].as_ref() {
             "make" | "new" => {
-                if self.cmd.len() > 1 {
-                    let mut values: Vec<u32> = vec![];
-                    for i in (1..self.cmd.len()) {
-                        match self.cmd[i].parse() {
-                            Ok(val) => values.push(val),
-                            Err(e) => {
-                                println!("Error: {} can't be parsed: {:?}", self.cmd[i], e);
-                                break;
-                            }
-                        }
-                    }
-                    println!("{:?}", values);
-                    if values.len() == 1 {
-                        self.make_task_monthday(values[0])
-                    } else if values.len() == 2 {
-                        println!("Make day-month: {}-{}", values[0], values[1])
-                    } else if values.len() >= 2 {
-                        println!("Make day-month-year: {}-{}-{}", values[0], values[1], values[2])
-                    }
-                } else {
-                    println!("usage: make <day> [month [year]]")
-                }
+                self.make_task()
                 // if (self.cmd.len() > 1) {
                 //     match self.cmd[1].parse() {
                 //         Ok(day) => self.make_task_monthday(day),
