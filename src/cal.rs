@@ -1,5 +1,6 @@
-
-pub mod Calendar {
+// repetition is defined here
+// add functions for displaying repetition inside range
+pub mod calendar {
     use chrono::NaiveDate;
     use chrono::Local; // Utc, Local
     use chrono::Datelike;
@@ -56,7 +57,7 @@ pub mod Calendar {
             for i in 0..dur {
                 match start.checked_add_signed(Duration::days(i as i64)) {
                     Some(check) => {
-                        if (task.occurs_on_day(check)) { // this call zigzags, but i think it makes sense?
+                        if task.occurs_on_day(check) { // this call zigzags, but i think it makes sense?
                             days.push(i);
                         }
                     },
@@ -70,35 +71,37 @@ pub mod Calendar {
 
     pub fn task_on_day(start: &NaiveDate, rep: &Repetition, check: NaiveDate) -> bool {
         match rep {
-            Daily => true,
-            Weekly => start.weekday() == check.weekday(),
-            Monthly => start.day() == check.day()
+            Repetition::Daily => true,
+            Repetition::Weekly => start.weekday() == check.weekday(),
+            Repetition::Monthly => start.day() == check.day(),
+            _ => false
         }
     }
 
-    pub fn print_month(month: u32) {
+    pub fn print_month(date: NaiveDate) {
         // modify this to check all tasks and show days with tasks
-        let year = Local::now().date().year();
+        let year = date.year();
+        let month = date.month();
         let current_month = NaiveDate::from_ymd(year, month, 1);
-        let next_month = if (month == 12) {
+        let next_month = if month == 12 {
             NaiveDate::from_ymd(year + 1, 1, 1)
         } else {
             NaiveDate::from_ymd(year, month + 1, 1)
         };
         let duration = next_month.signed_duration_since(current_month).num_days();
         let date = current_month.format("%B %m|%Y").to_string();
-        let len = date.len();
+        // let len = date.len();
 
         println!("\n{:^width$}", date, width=21);
         let mut first = current_month.weekday().num_days_from_sunday(); // number of days from sunday
         println!("Su Mo Tu We Th Fr Sa");
         let mut line = String::from("");
         if first < 7 {
-            for i in (0..first) {
+            for _i in 0..first {
                 line.push_str("   ")
             }
         }
-        for i in (0..duration) {
+        for i in 0..duration {
             first = (first + 1) % 7;
             // println!("day {}, first {}", i+1, first);
             line.push_str(&format!("{day:>2}", day=i+1));

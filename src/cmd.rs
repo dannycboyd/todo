@@ -2,7 +2,7 @@
 use std::io;
 
 use crate::task::TaskItem;
-use crate::cal::Calendar;
+use crate::cal::calendar;
 
 pub struct Cmd {
     pub cmd: Vec<String>,
@@ -10,21 +10,37 @@ pub struct Cmd {
 }
 
 impl Cmd {
-    fn make_task_monthday(&mut self, day: u32) {
-        match Calendar::get_monthday(day) {
-            None => println!("Error: {} isn't an acceptable day of the month", day),
-            Some(start) => {
-                let task = unsafe { TaskItem::new(start) };
-                println!("new task: {:?}", task);
-                self.storage.push(task);
+    fn parse_date(&self, to_parse: &[String]) -> Vec<u32> {
+        let mut values: Vec<u32> = vec![];
+        for i in 0..to_parse.len() {
+            match to_parse[i].parse() {
+                Ok(val) => values.push(val),
+                Err(e) => {
+                    println!("Error: {} can't be parsed: {:?}", to_parse[i], e);
+                    break;
+                }
             }
         };
+        values
+    }
+
+    fn make_task_from_values(&mut self, values: Vec<u32>) {
+        // println!("{:?}, length {}", values, values.len());
+        match calendar::get_start(values) {
+            None => println!("Error: values entered can't be handled by calendar::get_start()"),
+            Some(start) => {
+                println!("{:?}", start);
+                let task = unsafe { TaskItem::new(start) };
+                println!("New task: {:?}", task);
+                self.storage.push(task);
+            }
+        }
     }
 
     fn make_task(&mut self) {
         if self.cmd.len() > 1 {
             let mut values: Vec<u32> = vec![];
-            for i in (1..self.cmd.len()) {
+            for i in 1..self.cmd.len() {
                 match self.cmd[i].parse() {
                     Ok(val) => values.push(val),
                     Err(e) => {
@@ -33,8 +49,8 @@ impl Cmd {
                     }
                 }
             }
-            match Calendar::get_start(values) {
-                None => println!("Error: values entered can't be handled by Calendar::get_start()"),
+            match calendar::get_start(values) {
+                None => println!("Error: values entered can't be handled by calendar::get_start()"),
                 Some(start) => {
                     let task = unsafe { TaskItem::new(start) };
                     println!("new task: {:?}", task);
@@ -45,11 +61,6 @@ impl Cmd {
             println!("usage: make <day> | <month> <day> [year]")
         }
     }
-
-    // fn make_task(&mut self, date: NaiveDate) { // need to handle this better
-    //     let task = unsafe { TaskItem::new(date) };
-    //     self.storage.push(task)
-    // }
 
     // fn modify_task(&mut self) {
     //     let id = self.cmd[2].parse()?;
@@ -70,21 +81,40 @@ impl Cmd {
         match self.cmd[0].as_ref() {
             "make" | "new" => {
                 self.make_task()
-                // if (self.cmd.len() > 1) {
-                //     match self.cmd[1].parse() {
-                //         Ok(day) => self.make_task_monthday(day),
-                //         Err(e) => println!("Error: {} isn't an acceptable day of the month", self.cmd[1])
-                //     }
-                // }
             },
+            // "month" => {
+            //     if self.cmd.len() > 1 {
+            //         match self.cmd[1].parse() {
+            //             Ok(month) => calendar::print_month(month),
+            //             Err(e) => println!("An error occurred: {:?}", e)
+            //         }
+            //     }
+            // },
             "month" => {
-                if (self.cmd.len() > 1) {
-                    match self.cmd[1].parse() {
-                        Ok(month) => Calendar::print_month(month),
-                        Err(e) => println!("An error occurred: {:?}", e)
+                if self.cmd.len() > 1 {
+                    let max = self.cmd.len();
+                    let max = if max > 4 {
+                        4
+                    } else {
+                        max
+                    };
+                    match calendar::get_start(self.parse_date(&self.cmd[1..max])) {
+                        Some(date) => calendar::print_month(date),
+                        None => ()
                     }
                 }
-            },
+            }
+            "make_parse" => {
+                if self.cmd.len() > 1 {
+                    let max = self.cmd.len();
+                    let max = if max > 4 {
+                        4
+                    } else {
+                        max
+                    };
+                    self.make_task_from_values(self.parse_date(&self.cmd[1..max]));
+                }
+            }
             // "modify" => {
             //     if (self.cmd.len() > 3) {
             //         match self.modify_task();

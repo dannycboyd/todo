@@ -1,34 +1,9 @@
 extern crate chrono;
-use chrono::prelude::*; // Utc, Local
+// use chrono::prelude::*; // Utc, Local
 use chrono::NaiveDate;
-use crate::cal::Calendar::Repetition;
-use crate::cal::Calendar;
+use crate::cal::calendar::Repetition;
+use crate::cal::calendar;
 static mut NEXT_ID: u32 = 1;
-
-// #[derive(Debug)]
-// pub struct MultiDays {
-//     sun: bool,
-//     mon: bool,
-//     tue: bool,
-//     wed: bool,
-//     thur: bool,
-//     fri: bool,
-//     sat: bool,
-// }
-//
-// #[derive(Debug)]
-// pub enum CustomRep {
-//     Weekly(MultiDays),
-//     EveryXDays(u32),
-// }
-//
-// #[derive(Debug)]
-// pub enum Repetition {
-//     Daily,
-//     Weekly,
-//     Monthly,
-//     Custom(CustomRep),
-// }
 
 #[derive(Debug)]
 pub struct TaskItem {
@@ -67,7 +42,7 @@ impl TaskItem {
     }
 
     pub fn occurs_on_day(&self, check: NaiveDate) -> bool {
-        Calendar::task_on_day(&self.start, &self.repetition, check)
+        calendar::task_on_day(&self.start, &self.repetition, check)
     }
 }
 
