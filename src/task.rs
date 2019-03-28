@@ -2,7 +2,7 @@ extern crate chrono;
 // use chrono::prelude::*; // Utc, Local
 use chrono::NaiveDate;
 use crate::cal::calendar::Repetition;
-use crate::cal::calendar;
+// use crate::cal::calendar;
 static mut NEXT_ID: u32 = 1;
 
 #[derive(Debug)]
@@ -22,7 +22,7 @@ impl TaskItem {
         TaskItem {
             id: NEXT_ID,
             start,
-            repetition: Repetition::Daily,
+            repetition: Repetition::Weekly,
             title: String::from("Title"),
             note: String::from(""),
             finished: false,
@@ -41,9 +41,9 @@ impl TaskItem {
         self.note = String::from(note)
     }
 
-    pub fn occurs_on_day(&self, check: NaiveDate) -> bool {
-        calendar::task_on_day(&self.start, &self.repetition, check)
-    }
+    // pub fn occurs_on_day(&self, check: NaiveDate) -> bool {
+    //     calendar::task_on_day(&self.start, &self.repetition, check)
+    // }
 }
 
 //    impl TaskItem {

@@ -4,11 +4,16 @@ pub mod calendar {
     use chrono::NaiveDate;
     use chrono::Local; // Utc, Local
     use chrono::Datelike;
-    use chrono::Duration;
+    // use chrono::Duration;
+
+    use ansi_term::Style;
+    use ansi_term::Color::{Blue, Yellow};
+
     use crate::task::TaskItem;
 
     #[derive(Debug)]
     pub enum Repetition {
+        Never,
         Daily,
         Weekly,
         Monthly,
@@ -50,36 +55,36 @@ pub mod calendar {
     // 3: month/day/year
     //}
 
-    pub fn show_days_in_dur(tasks: Vec<&TaskItem>, start: NaiveDate, dur: u32) -> Vec<u32> {
-        let mut days = vec![];
-        for task in tasks.iter() {
-            println!("{:?}", task);
-            for i in 0..dur {
-                match start.checked_add_signed(Duration::days(i as i64)) {
-                    Some(check) => {
-                        if task.occurs_on_day(check) { // this call zigzags, but i think it makes sense?
-                            days.push(i);
-                        }
-                    },
-                    None => println!("Something went wrong trying to add {} days to {:?}", i, &start),
-                };
-            };
-        };
-        println!("{:?}", days);
-        days
-    }
+    // pub fn show_days_in_dur(tasks: Vec<&TaskItem>, start: NaiveDate, dur: u32) -> Vec<u32> {
+    //     let mut days = vec![];
+    //     for task in tasks.iter() {
+    //         println!("{:?}", task);
+    //         for i in 0..dur {
+    //             match start.checked_add_signed(Duration::days(i as i64)) {
+    //                 Some(check) => {
+    //                     if task.occurs_on_day(check) { // this call zigzags, but i think it makes sense?
+    //                         days.push(i);
+    //                     }
+    //                 },
+    //                 None => println!("Something went wrong trying to add {} days to {:?}", i, &start),
+    //             };
+    //         };
+    //     };
+    //     println!("{:?}", days);
+    //     days
+    // }
 
     pub fn task_on_day(start: &NaiveDate, rep: &Repetition, check: NaiveDate) -> bool {
         match rep {
-            Repetition::Daily => true,
-            Repetition::Weekly => start.weekday() == check.weekday(),
-            Repetition::Monthly => start.day() == check.day(),
+            Repetition::Never => start == &check,
+            Repetition::Daily => start <= &check,
+            Repetition::Weekly => start <= &check && start.weekday() == check.weekday(),
+            Repetition::Monthly => start <= &check && start.day() == check.day(),
             _ => false
         }
     }
 
-    pub fn print_month(date: NaiveDate) {
-        // modify this to check all tasks and show days with tasks
+    pub fn print_month(date: NaiveDate, tasks: &Vec<TaskItem>) {
         let year = date.year();
         let month = date.month();
         let current_month = NaiveDate::from_ymd(year, month, 1);
@@ -90,43 +95,78 @@ pub mod calendar {
         };
         let duration = next_month.signed_duration_since(current_month).num_days();
         let date = current_month.format("%B %m|%Y").to_string();
-        // let len = date.len();
 
-        println!("\n{:^width$}", date, width=21);
+        println!("\n{:^width$}", Style::new().bold().paint(&date), width=21);
         let mut first = current_month.weekday().num_days_from_sunday(); // number of days from sunday
         println!("Su Mo Tu We Th Fr Sa");
-        let mut line = String::from("");
         if first < 7 {
             for _i in 0..first {
-                line.push_str("   ")
+                print!("   ")
             }
         }
-        for i in 0..duration {
+        for i in 1..=duration {
             first = (first + 1) % 7;
-            // println!("day {}, first {}", i+1, first);
-            line.push_str(&format!("{day:>2}", day=i+1));
-            if first == 0 {
-                println!("{}", line);
-                line.clear();
+            let mut occurs = false;
+            for t in tasks.iter() {
+                if task_on_day(&t.start, &t.repetition, NaiveDate::from_ymd(year, month, i as u32)) {
+                    occurs = true;
+                    break;
+                }
+            };
+            let day_justified = format!("{day:>2}", day=i);
+            if occurs {
+                print!("{}", Yellow.paint(day_justified));
             } else {
-                line.push(' ');
+                print!("{}", day_justified);
+            };
+            if first == 0 {
+                print!("\n");
+            } else {
+                print!(" ");
             }
         }
-        println!("{}", line);
+        println!("")
+    }
+
+    pub fn print_week(date: NaiveDate, tasks: &Vec<TaskItem>) {
+        let year = date.year();
+        let month = date.month();
+        let mut weekday = date.weekday().num_days_from_sunday(); // number of days from sunday
+        let mut start: NaiveDate;
+        let start: NaiveDate = if weekday == 0 {
+            date
+        } else {
+            NaiveDate::from_ymd(year, month, date.day() - weekday)
+        };
+        let date = start.format("%B %d, %Y").to_string();
+        println!("Week of {}", date);
+        let mut happening: Vec<&TaskItem> = vec![];
+        for i in 1..=7 {
+
+        }
+        happening.sort_unstable_by(|a, b| a.get_id().cmp(&b.get_id()));
+        happening.dedup_by(|a, b| a.get_id() == b.get_id())
+        // print "week of month sunday, year"
+        // print start..start+7, for each task, insert occurring task IDs into vec
+        // sort + dedup vec,
+        // for each id in array,
+
+        // `for<'r, 's> fn(&'r task::TaskItem, &'s task::TaskItem) -> _`
+        // `for<'r, 's> fn(&'r &task::TaskItem, &'s &task::TaskItem) -> _`
 
     }
 
     // pub fn print_week() {}
-
-    pub fn get_monthday(day: u32) -> Option<NaiveDate> {
-        let current = Local::now().date();
-        NaiveDate::from_ymd_opt(current.year(), current.month(), day)
-    }
+    //
+    // pub fn get_monthday(day: u32) -> Option<NaiveDate> {
+    //     let current = Local::now().date();
+    //     NaiveDate::from_ymd_opt(current.year(), current.month(), day)
+    // }
 
     pub fn get_start(values: Vec<u32>) -> Option<NaiveDate> {
         let current = Local::now().date();
         if values.len() == 1 {
-            NaiveDate::from_ymd_opt(current.year(), current.month(), values[0])
+            NaiveDate::from_ymd_opt(current.year(), values[0], current.day())
         } else if values.len() == 2 {
             NaiveDate::from_ymd_opt(current.year(), values[0], values[1])
         } else if values.len() >= 2 {

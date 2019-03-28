@@ -1,5 +1,6 @@
 // command line crate
 use std::io;
+use std::cmp::min;
 
 use crate::task::TaskItem;
 use crate::cal::calendar;
@@ -25,7 +26,6 @@ impl Cmd {
     }
 
     fn make_task_from_values(&mut self, values: Vec<u32>) {
-        // println!("{:?}, length {}", values, values.len());
         match calendar::get_start(values) {
             None => println!("Error: values entered can't be handled by calendar::get_start()"),
             Some(start) => {
@@ -77,42 +77,28 @@ impl Cmd {
     //     }
     // }
 
+
     pub fn parse(&mut self) {
         match self.cmd[0].as_ref() {
             "make" | "new" => {
                 self.make_task()
             },
-            // "month" => {
-            //     if self.cmd.len() > 1 {
-            //         match self.cmd[1].parse() {
-            //             Ok(month) => calendar::print_month(month),
-            //             Err(e) => println!("An error occurred: {:?}", e)
-            //         }
-            //     }
-            // },
             "month" => {
                 if self.cmd.len() > 1 {
-                    let max = self.cmd.len();
-                    let max = if max > 4 {
-                        4
-                    } else {
-                        max
-                    };
-                    match calendar::get_start(self.parse_date(&self.cmd[1..max])) {
-                        Some(date) => calendar::print_month(date),
+                    let len = min(self.cmd.len(), 4);
+                    match calendar::get_start(self.parse_date(&self.cmd[1..len])) {
+                        Some(date) => calendar::print_month(date, &self.storage),
                         None => ()
                     }
                 }
             }
+            "day" => {
+
+            }
             "make_parse" => {
                 if self.cmd.len() > 1 {
-                    let max = self.cmd.len();
-                    let max = if max > 4 {
-                        4
-                    } else {
-                        max
-                    };
-                    self.make_task_from_values(self.parse_date(&self.cmd[1..max]));
+                    let len = min(self.cmd.len(), 4);
+                    self.make_task_from_values(self.parse_date(&self.cmd[1..len]));
                 }
             }
             // "modify" => {
