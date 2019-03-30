@@ -92,8 +92,14 @@ impl Cmd {
                     }
                 }
             }
-            "day" => {
-
+            "week" => {
+                if self.cmd.len() > 1 {
+                    let len = min(self.cmd.len(), 4);
+                    match calendar::get_start(self.parse_date(&self.cmd[1..len])) {
+                        Some(date) => calendar::print_week(date, &self.storage),
+                        None => ()
+                    }
+                }
             }
             "make_parse" => {
                 if self.cmd.len() > 1 {
