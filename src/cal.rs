@@ -4,7 +4,7 @@ pub mod calendar {
     use chrono::NaiveDate;
     use chrono::Local; // Utc, Local
     use chrono::Datelike;
-    use chrono::Duration;
+    // use chrono::Duration;
 
     use ansi_term::Style;
     use ansi_term::Color::{Yellow};
@@ -64,6 +64,25 @@ pub mod calendar {
         }
     }
 
+    fn month_len(date: &NaiveDate) -> Option<i64> {
+        next_month(date)
+            .map(|end| end.signed_duration_since(NaiveDate::from_ymd(date.year(), date.month(), 1)))
+    }
+
+    fn next_month(date: &NaiveDate) -> Option<NaiveDate> {
+        let mut year = date.year();
+        let mut month = date.month();
+        let day = 1;
+
+        if month == 12 {
+            year = year + 1;
+            month = 1;
+        } else {
+            month = month + 1;
+        }
+        NaiveDate::from_ymd_opt(year, month, day)
+    }
+
     pub fn task_on_day(start: &NaiveDate, rep: &Repetition, check: NaiveDate) -> bool {
         match rep {
             Repetition::Never => start == &check,
@@ -119,54 +138,51 @@ pub mod calendar {
     }
 
     pub fn print_week(date: NaiveDate, tasks: &Vec<TaskItem>) {
-
         match get_prev_sunday(date) {
             None => println!("can't handle date: {:?}", date),
             Some(start) => {
                 let mut happening: Vec<(u32, &TaskItem)> = vec![];
-                let year = start.year();
+                let mut year = start.year();
                 let mut month = start.month();
                 let mut day: i64 = start.day() as i64;
+                println!("Start: {:?}", start);
+                match next_month(&start) {
+                    None => println!("something went wrong checking the length of month: {:?}", start),
+                    Some(next) => {
+                        let length = next.signed_duration_since(NaiveDate::from_ymd(start.year(), start.month(), 1)).num_days();
+                        for i in 0..7 {
+                            if day + i == length + 1 {
+                                year = next.year();
+                                month = next.month();
+                                day = 1 - i;
+                            }
+                            let mut occurs = false;
+                            for t in tasks.iter() {
+                                if task_on_day(&t.start, &t.repetition, NaiveDate::from_ymd(year, month, (day + i) as u32)) {
+                                    happening.push(((day + i) as u32, t));
+                                    occurs = true;
+                                }
+                            }
 
-                let diff = start.signed_duration_since(date).num_days();
-
-                println!("Week of {}", start.format("%A, %B %d, %Y").to_string());
-                for i in 0..7 {
-                    if diff < 0 && date.month() != month && i + diff == 0 {
-                        month = month + 1;
-                        day = diff + 1;
-                    }
-                    let mut occurs = false;
-                    for t in tasks.iter() {
-                        if task_on_day(&t.start, &t.repetition, NaiveDate::from_ymd(year, month, (day + i) as u32)) {
-                            happening.push(((day + i) as u32, t));
-                            occurs = true;
+                            let day_justified = format!("{:>} ", day+i);
+                            let day_justified = if occurs { Yellow.bold().paint(day_justified).to_string() } else { String::from(day_justified) };
+                            print!("{}", day_justified);
                         }
-                    }
-                    let day_justified = format!("{:>} ", day+i);
-                    let day_justified = if occurs { Yellow.bold().paint(day_justified).to_string() } else { String::from(day_justified) };
-                    print!("{}", day_justified);
-                }
-                println!("");
-                let mut day: u32 = 0;
-                for (i, t) in happening.iter() {
-                    if *i == day {
-                        println!("    {:?}", t);
-                    } else {
-                        println!("{:>2}: {:?}", i, t);
-                        day = *i;
+                        println!("");
+                        let mut day: u32 = 0;
+                        for (i, t) in happening.iter() {
+                            if *i == day {
+                                println!("    {:?}", t);
+                            } else {
+                                println!("{:>2}: {:?}", i, t);
+                                day = *i;
+                            }
+                        }
                     }
                 }
             }
         }
     }
-
-    // pub fn print_week() {}
-    //
-    // pub fn get_monthday(day: u32) -> Option<NaiveDate> {
-    //     let current = Local::now().date();
-    //     NaiveDate::from_ymd_opt(current.year(), current.month(), day)
-    // }
 
     pub fn get_start(values: Vec<u32>) -> Option<NaiveDate> {
         let current = Local::now().date();
