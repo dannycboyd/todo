@@ -38,14 +38,17 @@ impl TaskItem {
     }
 
     pub fn set_note(&mut self, note: &str) {
+        // println!("set note: {}", note);
         self.note = String::from(note)
     }
 
-    // pub fn occurs_on_day(&self, check: NaiveDate) -> bool {
-    //     calendar::task_on_day(&self.start, &self.repetition, check)
-    // }
+    pub fn to_string(&self) -> String {
+        let start = self.start.format("%B %d, %Y").to_string();
+        format!("{id} - {title}: {start}, {rep:?}\nNotes: {note}",
+            id=self.get_id(),
+            title=self.title,
+            start=start,
+            rep=self.repetition,
+            note=self.note)
+    }
 }
-
-//    impl TaskItem {
-//        fn daysThisWeek(sunday: DateTime<Utc>)
-//    }

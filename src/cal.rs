@@ -4,7 +4,6 @@ pub mod calendar {
     use chrono::NaiveDate;
     use chrono::Local; // Utc, Local
     use chrono::Datelike;
-    // use chrono::Duration;
 
     use ansi_term::Style;
     use ansi_term::Color::{Yellow};
@@ -55,7 +54,7 @@ pub mod calendar {
     }
 
     fn get_prev_sunday(date: NaiveDate) -> Option<NaiveDate> {
-        let mut num_days = date.weekday().num_days_from_sunday();
+        let num_days = date.weekday().num_days_from_sunday();
         if num_days == 0 {
             Some(date)
         } else {
@@ -66,7 +65,7 @@ pub mod calendar {
 
     fn month_len(date: &NaiveDate) -> Option<i64> {
         next_month(date)
-            .map(|end| end.signed_duration_since(NaiveDate::from_ymd(date.year(), date.month(), 1)))
+            .map(|end| end.signed_duration_since(NaiveDate::from_ymd(date.year(), date.month(), 1)).num_days())
     }
 
     fn next_month(date: &NaiveDate) -> Option<NaiveDate> {
@@ -172,9 +171,9 @@ pub mod calendar {
                         let mut day: u32 = 0;
                         for (i, t) in happening.iter() {
                             if *i == day {
-                                println!("    {:?}", t);
+                                println!("    {}", t.to_string());
                             } else {
-                                println!("{:>2}: {:?}", i, t);
+                                println!("{:>2}: {}", i, t.to_string());
                                 day = *i;
                             }
                         }

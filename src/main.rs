@@ -13,7 +13,9 @@ mod task;
 fn main () {
     let mut cmdline = Cmd {
         cmd: vec![],
-        storage: vec![]
+        storage: vec![],
+        cmd_raw: String::new(),
+        // last: None,
     };
     cmdline.exec();
 }

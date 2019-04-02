@@ -7,7 +7,9 @@ use crate::cal::calendar;
 
 pub struct Cmd {
     pub cmd: Vec<String>,
-    pub storage: Vec<TaskItem>
+    pub cmd_raw: String,
+    pub storage: Vec<TaskItem>,
+    // pub last: Option<&TaskItem>,
 }
 
 impl Cmd {
@@ -62,20 +64,59 @@ impl Cmd {
         }
     }
 
-    // fn modify_task(&mut self) {
-    //     let id = self.cmd[2].parse()?;
-    //     let mut task: TaskItem;
-    //     for i in 1..self.storage.len() {
-    //         if (self.storage[i].get_id() == id) {
-    //             match self.cmd[3] {
-    //                 "title" => self.storage[i].set_title(self.cmd[4]),
-    //                 "note" => self.storage[i].set_note(self.cmd[4]),
-    //                 &_ => println!("Unknown property {}", self.cmd[3])
-    //             };
-    //             break;
-    //         }
-    //     }
-    // }
+    fn slice_cmd(&self, start: usize, end: usize) -> String {
+        let mut chars = self.cmd_raw.chars();
+        chars.skip(start + 1).take(end - start - 1).collect()
+    }
+
+    fn parse_modification(&mut self, index: usize) {
+        match self.cmd[2].as_ref() {
+            "title" => {
+                match &self.cmd_raw.find('"') {
+                    None => println!("Couldn't find opening \""),
+                    Some(start) => {
+                        match &self.cmd_raw.rfind('"') {
+                            None => println!("Can't find ending \""),
+                            Some(end) => {
+                                let title: String = self.slice_cmd(*start, *end);
+                                self.storage[index].set_title(&title);
+                            }
+                        }
+                    }
+                }
+            },
+            "note" => {
+                match &self.cmd_raw.find('"') {
+                    None => println!("Couldn't find opening \""),
+                    Some(start) => {
+                        match &self.cmd_raw.rfind('"') {
+                            None => println!("Can't find ending \""),
+                            Some(end) => {
+                                let note: String = self.slice_cmd(*start, *end);
+                                self.storage[index].set_note(&note);
+                            }
+                        }
+                    }
+                }
+            },
+            &_ => println!("Unknown property {}", self.cmd[2])
+        }
+    }
+
+    fn modify_task(&mut self) {
+        match self.cmd[1].parse() {
+            Ok(id) => {
+                for i in 0..self.storage.len() {
+                    if self.storage[i].get_id() == id {
+                        self.parse_modification(i);
+                        return;
+                    }
+                };
+                println!("No task found with id {}", id);
+            },
+            Err(e) => println!("An error occurred in modify_task: {:?}", e)
+        }
+    }
 
 
     pub fn parse(&mut self) {
@@ -91,7 +132,7 @@ impl Cmd {
                         None => ()
                     }
                 }
-            }
+            },
             "week" => {
                 if self.cmd.len() > 1 {
                     let len = min(self.cmd.len(), 4);
@@ -100,37 +141,46 @@ impl Cmd {
                         None => ()
                     }
                 }
-            }
+            },
             "make_parse" => {
                 if self.cmd.len() > 1 {
                     let len = min(self.cmd.len(), 4);
                     self.make_task_from_values(self.parse_date(&self.cmd[1..len]));
                 }
+            },
+            "modify" => {
+                if self.cmd.len() > 3 {
+                    self.modify_task();
+                }
+            },
+            "list" => {
+                for t in self.storage.iter() {
+                    println!("{}", t.to_string());
+                }
             }
-            // "modify" => {
-            //     if (self.cmd.len() > 3) {
-            //         match self.modify_task();
-            //     }
-            // }
             "help" | "h" => {
                 // print out each command here
-            }
+            },
             &_ => println!("Unknown command: {}", self.cmd[0])
         }
     }
 
     pub fn exec(&mut self) {
         loop {
-            let mut args = String::new();
-            io::stdin().read_line(&mut args)
-               .expect("Failed to read line");
-            self.cmd.clear();
-            let args: Vec<&str> = args.trim().split(' ').collect();
-            if args.len() > 0 {
-                for arg in &args {
-                    self.cmd.push(arg.to_string());
+            // let mut args = String::new();
+            self.cmd_raw = String::new();
+            match io::stdin().read_line(&mut self.cmd_raw) {
+                Err(e) => println!("An error occurred reading line: {:?}", e),
+                Ok(len) => {
+                    self.cmd.clear();
+                    let args: Vec<&str> = self.cmd_raw.trim().split(' ').collect();
+                    if args.len() > 0 {
+                        for arg in &args {
+                            self.cmd.push(arg.to_string());
+                        }
+                        self.parse();
+                    }
                 }
-                self.parse();
             }
         }
     }
@@ -240,9 +290,7 @@ impl Cmd {
 //     }
 // }
 //
-// fn modify_task(id: u32, field: &str, value: &str) {
-//     println!("modify {}: {}<-{}", id, field, value)
-// }
+
 //
 // fn main() {
 //     let mut storage: Vec<TaskItem> = vec![];
