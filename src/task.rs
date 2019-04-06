@@ -42,6 +42,27 @@ impl TaskItem {
         self.note = String::from(note)
     }
 
+    pub fn set_rep(&mut self, rep: &str) {
+        match rep {
+            "day" | "daily" => {
+                self.repetition = Repetition::Daily;
+            },
+            "weeky" | "weekly" => {
+                self.repetition = Repetition::Weekly;
+            }
+            "month" | "monthly" => {
+                self.repetition = Repetition::Monthly;
+            },
+            "never" | "none" => {
+                self.repetition = Repetition::Never;
+            }
+            &_ => {
+                println!("Set Repetition: No such repetition: {}", rep);
+            }
+
+        }
+    }
+
     pub fn to_string(&self) -> String {
         let start = self.start.format("%B %d, %Y").to_string();
         format!("{id} - {title}: {start}, {rep:?}\nNotes: {note}",

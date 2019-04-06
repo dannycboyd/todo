@@ -65,12 +65,12 @@ impl Cmd {
     }
 
     fn slice_cmd(&self, start: usize, end: usize) -> String {
-        let mut chars = self.cmd_raw.chars();
+        let chars = self.cmd_raw.chars();
         chars.skip(start + 1).take(end - start - 1).collect()
     }
 
     fn parse_modification(&mut self, index: usize) {
-        match self.cmd[2].as_ref() {
+        match self.cmd[2].as_str() {
             "title" => {
                 match &self.cmd_raw.find('"') {
                     None => println!("Couldn't find opening \""),
@@ -85,7 +85,7 @@ impl Cmd {
                     }
                 }
             },
-            "note" => {
+            "note" | "notes" => {
                 match &self.cmd_raw.find('"') {
                     None => println!("Couldn't find opening \""),
                     Some(start) => {
@@ -99,6 +99,9 @@ impl Cmd {
                     }
                 }
             },
+            "rep" | "repetition" => {
+                self.storage[index].set_rep(&self.cmd[3])
+            }
             &_ => println!("Unknown property {}", self.cmd[2])
         }
     }
@@ -171,8 +174,9 @@ impl Cmd {
             self.cmd_raw = String::new();
             match io::stdin().read_line(&mut self.cmd_raw) {
                 Err(e) => println!("An error occurred reading line: {:?}", e),
-                Ok(len) => {
+                Ok(_len) => {
                     self.cmd.clear();
+                    self.cmd_raw = self.cmd_raw.to_lowercase();
                     let args: Vec<&str> = self.cmd_raw.trim().split(' ').collect();
                     if args.len() > 0 {
                         for arg in &args {

@@ -149,6 +149,7 @@ pub mod calendar {
                     None => println!("something went wrong checking the length of month: {:?}", start),
                     Some(next) => {
                         let length = next.signed_duration_since(NaiveDate::from_ymd(start.year(), start.month(), 1)).num_days();
+                        print_weekdays();
                         for i in 0..7 {
                             if day + i == length + 1 {
                                 year = next.year();
@@ -163,7 +164,7 @@ pub mod calendar {
                                 }
                             }
 
-                            let day_justified = format!("{:>} ", day+i);
+                            let day_justified = format!("{:>2} ", day+i);
                             let day_justified = if occurs { Yellow.bold().paint(day_justified).to_string() } else { String::from(day_justified) };
                             print!("{}", day_justified);
                         }
