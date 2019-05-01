@@ -2,6 +2,7 @@ extern crate chrono;
 // use chrono::prelude::*; // Utc, Local
 use chrono::NaiveDate;
 use crate::cal::calendar::Repetition;
+use std::fmt;
 // use crate::cal::calendar;
 static mut NEXT_ID: u32 = 1;
 
@@ -12,6 +13,7 @@ pub struct TaskItem {
     pub repetition: Repetition,
     pub title: String,
     pub note: String,
+    pub completed: Vec<NaiveDate>,
     // completed: [DateTime<Utc>], // Should use a vector here, maybe. Other solution?
     pub finished: bool,
 }
@@ -26,6 +28,7 @@ impl TaskItem {
             title: String::from("Title"),
             note: String::from(""),
             finished: false,
+            completed: vec![],
         }
     }
 
@@ -62,13 +65,14 @@ impl TaskItem {
 
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
-        let start = self.start.format("%B %d, %Y").to_string();
-        format!("{id} - {title}: {start}, {rep:?}\nNotes: {note}",
+impl fmt::Display for TaskItem {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} - {}: {}, {rep}\nNotes: {note}",
             id=self.get_id(),
             title=self.title,
-            start=start,
+            start=self.start,
             rep=self.repetition,
             note=self.note)
     }

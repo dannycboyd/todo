@@ -4,6 +4,8 @@ pub mod calendar {
     use chrono::NaiveDate;
     use chrono::Local; // Utc, Local
     use chrono::Datelike;
+    use std::fmt;
+
 
     use ansi_term::Style;
     use ansi_term::Color::{Yellow};
@@ -17,6 +19,19 @@ pub mod calendar {
         Weekly,
         Monthly,
         Custom(MultiDays)
+    }
+
+    impl fmt::Display for Repetition {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            let printable = match self {
+                Repetition::Never => "Never",
+                Repetition::Daily => "Daily",
+                Repetition::Weekly => "Weekly",
+                Repetition::Monthly => "Monthly",
+                Repetition::Custom(_custom) => "Custom"
+            };
+            write!(f, "{}", printable)
+        }
     }
 
     #[derive(Debug)]
@@ -172,7 +187,7 @@ pub mod calendar {
                         let mut day: u32 = 0;
                         for (i, t) in happening.iter() {
                             if *i == day {
-                                println!("    {}", t.to_string());
+                                println!("    {}", t);
                             } else {
                                 println!("{:>2}: {}", i, t.to_string());
                                 day = *i;
