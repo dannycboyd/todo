@@ -1,6 +1,7 @@
 // repetition is defined here
 // add functions for displaying repetition inside range
 pub mod calendar {
+    use serde::{Serialize, Deserialize};
     use chrono::NaiveDate;
     use chrono::Local; // Utc, Local
     use chrono::Datelike;
@@ -12,13 +13,13 @@ pub mod calendar {
 
     use crate::task::TaskItem;
 
-    #[derive(Debug)]
+    #[derive(Serialize, Deserialize, Debug)]
     pub enum Repetition {
         Never,
         Daily,
         Weekly,
         Monthly,
-        Custom(MultiDays)
+        // Custom(MultiDays)
     }
 
     impl fmt::Display for Repetition {
@@ -28,22 +29,22 @@ pub mod calendar {
                 Repetition::Daily => "Daily",
                 Repetition::Weekly => "Weekly",
                 Repetition::Monthly => "Monthly",
-                Repetition::Custom(_custom) => "Custom"
+                // Repetition::Custom(_custom) => "Custom"
             };
             write!(f, "{}", printable)
         }
     }
 
-    #[derive(Debug)]
-    pub struct MultiDays {
-        sun: bool,
-        mon: bool,
-        tue: bool,
-        wed: bool,
-        thur: bool,
-        fri: bool,
-        sat: bool,
-    }
+    // #[derive(Debug)]
+    // pub struct MultiDays {
+    //     sun: bool,
+    //     mon: bool,
+    //     tue: bool,
+    //     wed: bool,
+    //     thur: bool,
+    //     fri: bool,
+    //     sat: bool,
+    // }
 
     // pub fn show_days_in_dur(tasks: Vec<&TaskItem>, start: NaiveDate, dur: u32) -> Vec<u32> {
     //     let mut days = vec![];

@@ -1,12 +1,13 @@
 extern crate chrono;
 // use chrono::prelude::*; // Utc, Local
+use serde::{Serialize, Deserialize};
 use chrono::NaiveDate;
 use crate::cal::calendar::Repetition;
 use std::fmt;
 // use crate::cal::calendar;
 static mut NEXT_ID: u32 = 1;
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TaskItem {
     id: u32,
     pub start: NaiveDate,
@@ -30,6 +31,9 @@ impl TaskItem {
             finished: false,
             completed: vec![],
         }
+    }
+    pub unsafe fn set_id_start(highest: u32) {
+        NEXT_ID = highest + 1;
     }
 
     pub fn get_id(&self) -> u32 {

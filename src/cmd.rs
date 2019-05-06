@@ -1,9 +1,16 @@
 // command line crate
 use std::io;
+use std::io::{Write};
 use std::cmp::min;
+use serde_json;
+use std::fs::File;
+use std::error;
+
+use std::fs;
 
 use crate::task::TaskItem;
 use crate::cal::calendar;
+use crate::DEFAULT_FILE;
 
 pub struct Cmd {
     pub cmd: Vec<String>,
@@ -13,6 +20,42 @@ pub struct Cmd {
 }
 
 impl Cmd {
+
+    pub fn handle_load(&mut self, url: &str) {
+        match self.load(url) {
+            Ok(count) => println!("Loaded {} tasks {}", count, url),
+            Err(e) => println!("Error occurred during file load: {:?}", e),
+        }
+    }
+
+    fn load(&mut self, url: &str) -> Result<usize, Box<error::Error>> {
+        let file = fs::read_to_string(url)?;
+        self.storage = serde_json::from_str(&file)?;
+        let len = self.storage.len();
+        if len > 0 {
+            unsafe {
+                TaskItem::set_id_start(self.storage[len - 1].get_id());
+            }
+        }
+        Ok(len)
+    }
+
+    pub fn handle_save(&self, url: &str) {
+        match self.save(url) {
+            Ok(count) => println!("Saved {} tasks", count),
+            Err(e) => println!("Error occurred during save: {:?}", e),
+        }
+    }
+
+    pub fn save(&self, url: &str) -> Result<usize, Box<error::Error>> {
+        if self.storage.len() > 0 {
+            let mut file = File::create(DEFAULT_FILE)?;
+            let contents = serde_json::to_string(&self.storage)?;
+            write!(file, "{}", contents);
+        };
+        Ok(self.storage.len())
+    }
+
     fn parse_date(&self, to_parse: &[String]) -> Vec<u32> {
         let mut values: Vec<u32> = vec![];
         for i in 0..to_parse.len() {
@@ -107,7 +150,8 @@ impl Cmd {
     }
 
     fn modify_task(&mut self) {
-        match self.cmd[1].parse() {
+        // let result = self.cmd[1].parse() : Result
+        match self.cmd[1].parse::<u32>() {
             Ok(id) => {
                 for i in 0..self.storage.len() {
                     if self.storage[i].get_id() == id {
@@ -160,7 +204,10 @@ impl Cmd {
                 for t in self.storage.iter() {
                     println!("{}", t.to_string());
                 }
-            }
+            },
+            "save" => {
+                self.handle_save(DEFAULT_FILE);
+            },
             "help" | "h" => {
                 // print out each command here
             },

@@ -10,6 +10,8 @@ mod cal;
 
 mod task;
 
+const DEFAULT_FILE: &str = "./caldata.json";
+
 fn main () {
     let mut cmdline = Cmd {
         cmd: vec![],
@@ -17,5 +19,6 @@ fn main () {
         cmd_raw: String::new(),
         // last: None,
     };
+    cmdline.handle_load(DEFAULT_FILE);
     cmdline.exec();
 }
