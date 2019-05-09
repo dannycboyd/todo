@@ -1,0 +1,18 @@
+use std::str::FromStr;
+
+grammar;
+
+pub Date: Vec<u32> = {
+    <day:Num> => vec![day],
+    <month:Num> "-" <day:Num> => vec![month, day],
+    <month:Num> "-" <day:Num> "-" <year:Year> => vec![month, day, year],
+}
+
+Num: u32 = {
+    r"[0-9]{2}" => u32::from_str(<>).unwrap()
+}
+
+Year: u32 = {
+    r"[0-9]{4}" => u32::from_str(<>).unwrap(),
+    "'" <n:Num> => n
+}

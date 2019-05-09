@@ -3,9 +3,15 @@ name = "to_do"
 version = "0.1.0"
 authors = ["Danny Boyd <odannyboyd@montara.com>"]
 edition = "2018"
+build = "build.rs"
+
+[build-dependencies]
+lalrpop = "0.16.3"
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 ansi_term = "0.9"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
+lalrpop-util = "0.16.3"
+regex = "0.2.1"
