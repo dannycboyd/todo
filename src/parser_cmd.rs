@@ -4,9 +4,9 @@ use std::io::{Write};
 use std::cmp::min;
 use serde_json;
 use std::fs::File;
-use std::error;
-
 use std::fs;
+use std::error;
+use chrono::NaiveDate;
 
 use crate::task::TaskItem;
 use crate::cal::calendar;
@@ -18,8 +18,11 @@ lalrpop_mod!(pub task_item);
 #[derive(Debug)]
 pub enum Args {
     Make(Vec<u32>, String, String, calendar::Repetition),
-    Test(Vec<u32>),
-    Test2(Vec<u32>, calendar::Repetition)
+    Test(String),
+    Show(calendar::Repetition, Option<Vec<u32>>),
+    List,
+    Save,
+    Help
 }
 
 pub struct Cmd {
@@ -35,10 +38,49 @@ impl Cmd {
         Cmd { cmd_raw: String::new(), storage: vec![], parser: task_item::CmdParser::new() }
     }
 
-    fn parse_cmd(&self) {
+    fn unwrap_date(raw: Option<Vec<u32>>) -> Option<NaiveDate> {
+        let date_raw = raw?;
+        calendar::get_start(date_raw)
+    }
+
+    fn show(&self, kind: calendar::Repetition, date_raw: Option<Vec<u32>>) {
+        match Cmd::unwrap_date(date_raw) {
+            None => {
+                println!("{:?}, today", kind)
+            },
+            Some(date) => {
+                println!("{:?}, {:?}", kind, date)
+            }
+        }
+    }
+
+    fn do_cmd(&mut self, cmd: Args) {
+        match cmd {
+            Args::Make(date_raw, title, desc, rep) => {
+                match calendar::get_start(date_raw) {
+                    None => println!("Error: values entered can't be handled by calendar::get_start()"),
+                    Some(start) => {
+                        let task = unsafe {
+                            TaskItem::new(start, title, desc, rep)
+                        };
+                        println!("new task: {:?}", task);
+                        self.storage.push(task);
+                    }
+                }
+            },
+            Args::Test(val) => (),
+            Args::Show(kind, when) => self.show(kind, when),
+            Args::List => (),
+            Args::Save => (),
+            Args::Help => (),
+        }
+    }
+
+    fn parse_cmd(&mut self) {
         match self.parser.parse(&self.cmd_raw) {
             Ok(cmd) => {
                 println!("parsed command: {:?}", cmd);
+                self.do_cmd(cmd);
             },
             Err(e) => {
                 println!("An error occurred: {}", e);

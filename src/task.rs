@@ -20,14 +20,14 @@ pub struct TaskItem {
 }
 
 impl TaskItem {
-    pub unsafe fn new(start: NaiveDate) -> TaskItem {
+    pub unsafe fn new(start: NaiveDate, title: String, note: String, rep: Repetition) -> TaskItem {
         NEXT_ID += 1;
         TaskItem {
             id: NEXT_ID,
             start,
-            repetition: Repetition::Weekly,
-            title: String::from("Title"),
-            note: String::from(""),
+            repetition: rep,
+            title: title,
+            note: note,
             finished: false,
             completed: vec![],
         }

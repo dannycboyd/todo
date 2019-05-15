@@ -21,6 +21,7 @@ const DEFAULT_FILE: &str = "./caldata.json";
 fn main () {
     let date_p = task_item::DateParser::new();
     let rep_p = task_item::RepeatsParser::new();
+    let per_p = task_item::PeriodParser::new();
 
     println!("{:?}", date_p.parse("22"));
     println!("{:?}", date_p.parse("04-20"));
@@ -31,6 +32,9 @@ fn main () {
     println!("{:?}", rep_p.parse("never"));
     println!("{:?}", rep_p.parse("d"));
     println!("{:?}", rep_p.parse("m"));
+
+    println!("{:?}", per_p.parse("m 04-20"));
+    println!("{:?}", per_p.parse("d"));
 
     let mut cmdline = Cmd::new();
     // cmdline.handle_load(DEFAULT_FILE);

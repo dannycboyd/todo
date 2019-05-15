@@ -13,7 +13,7 @@ pub Date: Vec<u32> = {
 }
 
 Num: u32 = {
-    r"[0-9]{2}" => u32::from_str(<>).unwrap()
+    r"[0-9]{1,2}" => u32::from_str(<>).unwrap()
 }
 
 Year: u32 = {
@@ -31,11 +31,37 @@ pub Repeats: Repetition = {
     "monthly" => Repetition::Monthly,
 }
 
+pub Period: (Repetition, Option<Vec<u32>>) = {
+    <rep:Repeats> <date:Date?> => match date {
+        Some(date) => (rep, Some(date)),
+        None => (rep, None)
+    }
+}
+
 pub Words: String = {
-    "`" <s:r"[A-Za-z,.!]"> "`" => String::from(s)
+    "`" <list:WordList> "`" => list.join(" ")
+}
+
+WordList: Vec<String> = {
+    <w:Word> <list:WordList> => {
+        let mut newlist = vec![w];
+        newlist.extend(list);
+        newlist
+    },
+    Word => vec![<>]
+}
+
+Word: String = {
+    <w:r"[A-Za-z,.!\-+]+"> => String::from(w)
 }
 
 pub Cmd: (Args) = {
-    "test" <date:Date> => Args::Test(date),
-    "test2" <date:Date> <rep:Repeats> => Args::Test2(date, rep)
+    "test" <words:Words> => Args::Test(words),
+    "make" <date:Date> <rep:Repeats> <title:Words> <desc:Words> => {
+        Args::Make(date, title, desc, rep)
+    },
+    "show" <when:Period> => Args::Show(when.0, when.1),
+    "list" => Args::List,
+    "help" => Args::Help,
+    "save" => Args::Save,
 }
