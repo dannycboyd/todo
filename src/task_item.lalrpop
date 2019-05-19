@@ -55,10 +55,16 @@ Word: String = {
     <w:r"[A-Za-z,.!\-+]+"> => String::from(w)
 }
 
+Task: (Vec<u32>, String, String, Repetition) = {
+    <date:Date> <rep:Repeats> <title:Words> <desc:Words> => (date, title, desc, rep),
+    <date:Date> <title:Words> <desc:Words> => (date, title, desc, Repetition::Weekly),
+
+}
+
 pub Cmd: (Args) = {
     "test" <words:Words> => Args::Test(words),
-    "make" <date:Date> <rep:Repeats> <title:Words> <desc:Words> => {
-        Args::Make(date, title, desc, rep)
+    "make" <task:Task> => {
+        Args::Make(task.0, task.1, task.2, task.3)
     },
     "show" <when:Period> => Args::Show(when.0, when.1),
     "list" => Args::List,

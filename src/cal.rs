@@ -108,6 +108,15 @@ pub mod calendar {
         }
     }
 
+    pub fn show_type(kind: Repetition, start: NaiveDate, tasks: &Vec<TaskItem>) {
+        match kind {
+            Repetition::Never => (),
+            Repetition::Daily => (),
+            Repetition::Weekly => print_week(start, tasks),
+            Repetition::Monthly => print_month(start, tasks)
+        }
+    }
+
     pub fn print_month(date: NaiveDate, tasks: &Vec<TaskItem>) {
         let year = date.year();
         let month = date.month();
@@ -210,6 +219,16 @@ pub mod calendar {
             NaiveDate::from_ymd_opt(values[2] as i32, values[0], values[1])
         } else {
             None
+        }
+    }
+
+    pub fn date_or_today(values: Option<Vec<u32>>) -> NaiveDate {
+        match values {
+            Some(raw) => match get_start(raw) {
+                Some(date) => date,
+                None => Local::now().date().naive_local()
+            },
+            None => Local::now().date().naive_local()
         }
     }
 }

@@ -2,7 +2,8 @@ extern crate chrono;
 // use chrono::prelude::*; // Utc, Local
 use serde::{Serialize, Deserialize};
 use chrono::NaiveDate;
-use crate::cal::calendar::Repetition;
+use crate::cal::calendar::{Repetition};
+use crate::cal::calendar;
 use std::fmt;
 // use crate::cal::calendar;
 static mut NEXT_ID: u32 = 1;
@@ -34,6 +35,12 @@ impl TaskItem {
     }
     pub unsafe fn set_id_start(highest: u32) {
         NEXT_ID = highest + 1;
+    }
+
+    pub unsafe fn from_raw(raw: RawTaskitem) -> Option<TaskItem> {
+        let start = calendar::get_start(raw.start)?;
+        let mut task = TaskItem::new(start, raw.title, raw.note, raw.repetition);
+        Some(task)
     }
 
     pub fn get_id(&self) -> u32 {
@@ -80,4 +87,13 @@ impl fmt::Display for TaskItem {
             rep=self.repetition,
             note=self.note)
     }
+}
+
+pub struct RawTaskitem {
+    pub start: Vec<u32>,
+    pub repetition: Repetition,
+    pub title: String,
+    pub note: String,
+    pub completed: Vec<Vec<u32>>,
+    pub finished: bool,
 }
