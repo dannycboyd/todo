@@ -43,6 +43,36 @@ impl TaskItem {
         Some(task)
     }
 
+    // pub fn apply_raw(raw: RawTaskItem, mut task: TaskItem) -> TaskItem { // I can't quite hold in my head what this should be doing.
+    // // Given a set of optional values, I want (if it exists) to apply them to a task.
+    // // this function will take a TaskItem and mutate its values. Don't return optional
+    // // For the date, if it exists, try to create a new date. If that exists, apply it.
+    // // in all other cases, apply them directly
+    //     match raw.start {
+    //         Some(start_raw) => {
+    //             match calendar::get_start(start_raw) {
+    //                 Some(start) => task.start = start,
+    //                 None => ()
+    //             }
+    //         }
+    //         None => ()
+    //     };
+    //     match raw.repetition {
+    //         Some(rep) => task.rep = rep,
+    //         None => ()
+    //     };
+    //     match raw.title {
+    //         Some(title) => task.title = title,
+    //         None => ()
+    //     };
+    //     match raw.note {
+    //         Some(note) => task.note = note,
+    //         None => ()
+    //     };
+    //     task;
+    // }
+
+// How does this go? The
     // pub fn apply_modifications(mods: Vec<Modification>) -> Option<TaskItem> {
     //     for m in mods.iter() {
     //         match m {
