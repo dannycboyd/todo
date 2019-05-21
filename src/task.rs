@@ -37,11 +37,28 @@ impl TaskItem {
         NEXT_ID = highest + 1;
     }
 
-    pub unsafe fn from_raw(raw: RawTaskitem) -> Option<TaskItem> {
+    pub unsafe fn from_raw(raw: RawTaskItem) -> Option<TaskItem> {
         let start = calendar::get_start(raw.start)?;
         let mut task = TaskItem::new(start, raw.title, raw.note, raw.repetition);
         Some(task)
     }
+
+    // pub fn apply_modifications(mods: Vec<Modification>) -> Option<TaskItem> {
+    //     for m in mods.iter() {
+    //         match m {
+    //             // fields go here, with functions to handle
+    //             Modification::Start(raw_start) => (),
+    //             Modification::Repetition(rep) => (),
+    //             Modification::Title(title) => (),
+    //             Modification::Note(note) => (),
+    //         }
+    //     }
+    //     // how the heck do we do this
+    //     // Need some structure containing optionals, then check them all?
+    //     // Currently there's only 4 modifiable fields (should be 5, for Finished. Completed won't be modifiable beyond set/unset )
+    //     // Vec<Modifications>, where a modification can be a field and a value
+    //
+    // }
 
     pub fn get_id(&self) -> u32 {
         self.id
@@ -89,11 +106,39 @@ impl fmt::Display for TaskItem {
     }
 }
 
-pub struct RawTaskitem {
+#[derive(Debug)]
+pub struct RawTaskItem {
     pub start: Vec<u32>,
     pub repetition: Repetition,
     pub title: String,
     pub note: String,
-    pub completed: Vec<Vec<u32>>,
     pub finished: bool,
+}
+
+// pub struct RawTaskItem {
+//     pub start: Option<Vec<u32>>,
+//     pub repetition: Option<Repetition>,
+//     pub title: Option<String>,
+//     pub note: Option<String>,
+//     pub finished: Option<bool>,
+// }
+
+impl RawTaskItem {
+    pub fn new_empty() -> RawTaskItem {
+        RawTaskItem {
+            start: vec![],
+            repetition: Repetition::Weekly,
+            title: String::from("Title"),
+            note: String::from(""),
+            finished: false,
+        }
+    }
+
+    // pub fn new_defaults() -> RawTaskItem {
+    //     start: Some(vec![]),
+    //     repetition: Some(Repetition::Weekly),
+    //     title: Some(String::from("Title")),
+    //     note: Some(String::from("")),
+    //     finished: Some(false)
+    // }
 }

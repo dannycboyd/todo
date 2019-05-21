@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::task::TaskItem;
+use crate::task::{TaskItem, RawTaskItem};
 use crate::cal::calendar::Repetition;
 
 use crate::parser_cmd::Args;
@@ -43,16 +43,16 @@ pub Words: String = {
 }
 
 WordList: Vec<String> = {
-    <w:Word> <list:WordList> => {
-        let mut newlist = vec![w];
-        newlist.extend(list);
-        newlist
+    <list:WordList> <w:Word> => {
+        let mut list = list;
+        list.push(w);
+        list
     },
     Word => vec![<>]
 }
 
 Word: String = {
-    <w:r"[A-Za-z,.!\-+]+"> => String::from(w)
+    <w:r"[A-Za-z;:,.!\-+]+"> => String::from(w)
 }
 
 Task: (Vec<u32>, String, String, Repetition) = {
@@ -61,11 +61,18 @@ Task: (Vec<u32>, String, String, Repetition) = {
 
 }
 
+RawTask: RawTaskItem = {
+    <task:RawTask> <start:Date> => { let mut task = task; task.start = start; task },
+    <task:RawTask> <rep:Repeats> => { let mut task = task; task.repetition = rep; task },
+    <task:RawTask> <title:Words> <note:Words> => { let mut task = task; task.title = title; task.note = note; task },
+    <task:RawTask> "t:" <title:Words> => { let mut task = task; task.title = title; task },
+    <task:RawTask> "n:" <note:Words> => { let mut task = task; task.note = note; task },
+    () => { RawTaskItem::new_empty() }
+}
+
 pub Cmd: (Args) = {
     "test" <words:Words> => Args::Test(words),
-    "make" <task:Task> => {
-        Args::Make(task.0, task.1, task.2, task.3)
-    },
+    "make" <raw:RawTask> => { Args::MakeRaw(raw) },
     "show" <when:Period> => Args::Show(when.0, when.1),
     "list" => Args::List,
     "help" => Args::Help,

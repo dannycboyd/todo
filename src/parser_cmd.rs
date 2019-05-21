@@ -8,7 +8,7 @@ use std::fs;
 use std::error;
 use chrono::NaiveDate;
 
-use crate::task::TaskItem;
+use crate::task::{ TaskItem, RawTaskItem };
 use crate::cal::calendar;
 use crate::DEFAULT_FILE;
 
@@ -17,7 +17,8 @@ lalrpop_mod!(pub task_item);
 
 #[derive(Debug)]
 pub enum Args {
-    Make(Vec<u32>, String, String, calendar::Repetition),
+    // Make(Vec<u32>, String, String, calendar::Repetition),
+    MakeRaw(RawTaskItem),
     Test(String),
     Show(calendar::Repetition, Option<Vec<u32>>),
     List,
@@ -36,7 +37,7 @@ pub struct Cmd {
 impl Cmd {
     pub fn new() -> Cmd {
         let mut me = Cmd { cmd_raw: String::new(), storage: vec![], parser: task_item::CmdParser::new() };
-        me.load(DEFAULT_FILE);
+        me.handle_load(DEFAULT_FILE);
         me
     }
 
@@ -93,16 +94,13 @@ impl Cmd {
 
     fn do_cmd(&mut self, cmd: Args) {
         match cmd {
-            Args::Make(date_raw, title, desc, rep) => {
-                match calendar::get_start(date_raw) {
-                    None => println!("Error: values entered can't be handled by calendar::get_start()"),
-                    Some(start) => {
-                        let task = unsafe {
-                            TaskItem::new(start, title, desc, rep)
-                        };
-                        println!("new task: {:?}", task);
+            Args::MakeRaw(raw) => unsafe {
+                match TaskItem::from_raw(raw) {
+                    None => println!("An error occurred, likely the dates couldn't be parsed into real dates"),
+                    Some(task) => {
+                        println!("New task: {:?}", task);
                         self.storage.push(task);
-                    }
+                    },
                 }
             },
             Args::Test(val) => (),
