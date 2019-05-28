@@ -1,0 +1,91 @@
+use std::str::FromStr;
+use crate::task::{RawTaskItem, Mods};
+use crate::cal::calendar::Repetition;
+
+use crate::parser_cmd::{Args};
+
+grammar;
+
+pub Date: Vec<u32> = {
+    <day:Num> => vec![day],
+    <month:Num> "-" <day:Num> => vec![month, day],
+    <month:Num> "-" <day:Num> "-" <year:Year> => vec![month, day, year],
+}
+
+Num: u32 = {
+    r"[0-9]{1,2}" => u32::from_str(<>).unwrap()
+}
+
+Year: u32 = {
+    r"'\d{2}|\d{4}" => u32::from_str(<>).unwrap()
+}
+
+pub Repeats: Repetition = {
+    "n" => Repetition::Never,
+    "never" => Repetition::Never,
+    "d" => Repetition::Daily,
+    "daily" => Repetition::Daily,
+    "w" => Repetition::Weekly,
+    "weekly" => Repetition::Weekly,
+    "m" => Repetition::Monthly,
+    "monthly" => Repetition::Monthly,
+    "y" => Repetition::Yearly,
+    "yearly" => Repetition::Yearly,
+}
+
+pub Period: (Repetition, Option<Vec<u32>>) = {
+    <rep:Repeats> <date:Date?> => match date {
+        Some(date) => (rep, Some(date)),
+        None => (rep, None)
+    }
+}
+
+pub Words: String = {
+    "`" <list:WordList> "`" => list.join(" ")
+}
+
+WordList: Vec<String> = {
+    <list:WordList> <w:Word> => {
+        let mut list = list;
+        list.push(w);
+        list
+    },
+    Word => vec![<>]
+}
+
+Word: String = {
+    <w:r"[A-Za-z;:,.!\-+]+"> => String::from(w)
+}
+
+Task: (Vec<u32>, String, String, Repetition) = {
+    <date:Date> <rep:Repeats> <title:Words> <desc:Words> => (date, title, desc, rep),
+    <date:Date> <title:Words> <desc:Words> => (date, title, desc, Repetition::Weekly),
+
+}
+
+RawTask: RawTaskItem = {
+    <task:RawTask> <start:Date> => { let mut task = task; task.start = start; task },
+    <task:RawTask> <rep:Repeats> => { let mut task = task; task.repetition = rep; task },
+    <task:RawTask> <title:Words> <note:Words> => { let mut task = task; task.title = title; task.note = note; task },
+    <task:RawTask> "t:" <title:Words> => { let mut task = task; task.title = title; task },
+    <task:RawTask> "n:" <note:Words> => { let mut task = task; task.note = note; task },
+    () => { RawTaskItem::new_empty() }
+}
+
+Modifications: Vec<Mods> = {
+    <mods:Modifications> <start:Date> => { let mut mods = mods; mods.push(Mods::Start(start)); mods },
+    <mods:Modifications> <rep:Repeats> => { let mut mods = mods; mods.push(Mods::Rep(rep)); mods },
+    <mods:Modifications> "t:" <title:Words> => { let mut mods = mods; mods.push(Mods::Title(title)); mods },
+    <mods:Modifications> "n:" <note:Words> => { let mut mods = mods; mods.push(Mods::Note(note)); mods },
+    () => { vec![] }
+
+}
+
+pub Cmd: (Args) = {
+    "make" <raw:RawTask> => { Args::MakeRaw(raw) },
+    "mod" <id:Num> <modifs:Modifications> => { Args::Mods(id, modifs) },
+    "show" <when:Period> => Args::Show(when.0, when.1),
+    "list" => Args::List,
+    "help" => Args::Help,
+    "save" => Args::Save,
+}

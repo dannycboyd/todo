@@ -19,6 +19,7 @@ pub mod calendar {
         Daily,
         Weekly,
         Monthly,
+        Yearly,
         // Custom(MultiDays)
     }
 
@@ -29,6 +30,7 @@ pub mod calendar {
                 Repetition::Daily => "Daily",
                 Repetition::Weekly => "Weekly",
                 Repetition::Monthly => "Monthly",
+                Repetition::Yearly => "Yearly",
                 // Repetition::Custom(_custom) => "Custom"
             };
             write!(f, "{}", printable)
@@ -87,15 +89,14 @@ pub mod calendar {
     fn next_month(date: &NaiveDate) -> Option<NaiveDate> {
         let mut year = date.year();
         let mut month = date.month();
-        let day = 1;
-
+        
         if month == 12 {
             year = year + 1;
             month = 1;
         } else {
             month = month + 1;
         }
-        NaiveDate::from_ymd_opt(year, month, day)
+        NaiveDate::from_ymd_opt(year, month, 1)
     }
 
     pub fn task_on_day(start: &NaiveDate, rep: &Repetition, check: NaiveDate) -> bool {
@@ -105,6 +106,16 @@ pub mod calendar {
             Repetition::Weekly => start <= &check && start.weekday() == check.weekday(),
             Repetition::Monthly => start <= &check && start.day() == check.day(),
             _ => false
+        }
+    }
+
+    pub fn show_type(kind: Repetition, start: NaiveDate, tasks: &Vec<TaskItem>) {
+        match kind {
+            Repetition::Never => (),
+            Repetition::Daily => (),
+            Repetition::Weekly => print_week(start, tasks),
+            Repetition::Monthly => print_month(start, tasks),
+            Repetition::Yearly => print_year(start, tasks),
         }
     }
 
@@ -200,6 +211,37 @@ pub mod calendar {
         }
     }
 
+    fn next_year(date: &NaiveDate) -> Option<NaiveDate> {
+        NaiveDate::from_yo_opt(date.year() + 1, 1)
+    }
+
+    pub fn print_year(start: NaiveDate, tasks: &Vec<TaskItem>) {
+        let year = start.year();
+        match next_year(&start) {
+            None => println!("Something went wrong trying to get the next year"),
+            Some(next) => {
+                let length: u32 = next.signed_duration_since(NaiveDate::from_yo(year, 1)).num_days() as u32;
+                let width: usize = (length / 7) as usize;
+                let mut days: Vec<String> = vec![String::new(); width];
+                for i in 1..length {
+                    let mut occurs = false;
+                    for t in tasks.iter() {
+                        if task_on_day(&t.start, &t.repetition, NaiveDate::from_yo(year, i)) {
+                            occurs = true;
+                        }
+                    }
+                    let day_justified = format!("{:>5} ", i);
+                    let day_justified = if occurs { Yellow.bold().paint(day_justified).to_string() } else { String::from(day_justified) };
+                    days[(i as usize - 1) % width].push_str(&day_justified);
+                };
+                for col in days.iter() {
+                    println!("{}", col);
+                }
+            }
+        }
+
+    }
+
     pub fn get_start(values: Vec<u32>) -> Option<NaiveDate> {
         let current = Local::now().date();
         if values.len() == 1 {
@@ -210,6 +252,16 @@ pub mod calendar {
             NaiveDate::from_ymd_opt(values[2] as i32, values[0], values[1])
         } else {
             None
+        }
+    }
+
+    pub fn date_or_today(values: Option<Vec<u32>>) -> NaiveDate {
+        match values {
+            Some(raw) => match get_start(raw) {
+                Some(date) => date,
+                None => Local::now().date().naive_local()
+            },
+            None => Local::now().date().naive_local()
         }
     }
 }
