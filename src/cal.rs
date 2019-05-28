@@ -89,15 +89,14 @@ pub mod calendar {
     fn next_month(date: &NaiveDate) -> Option<NaiveDate> {
         let mut year = date.year();
         let mut month = date.month();
-        let day = 1;
-
+        
         if month == 12 {
             year = year + 1;
             month = 1;
         } else {
             month = month + 1;
         }
-        NaiveDate::from_ymd_opt(year, month, day)
+        NaiveDate::from_ymd_opt(year, month, 1)
     }
 
     pub fn task_on_day(start: &NaiveDate, rep: &Repetition, check: NaiveDate) -> bool {
@@ -225,20 +224,15 @@ pub mod calendar {
                 let width: usize = (length / 7) as usize;
                 let mut days: Vec<String> = vec![String::new(); width];
                 for i in 1..length {
-                    // if i % width == 1 {
-                    //     print!("\n");
-                    // }
                     let mut occurs = false;
                     for t in tasks.iter() {
                         if task_on_day(&t.start, &t.repetition, NaiveDate::from_yo(year, i)) {
-                            // happening.push(((day + i) as u32, t));
                             occurs = true;
                         }
                     }
                     let day_justified = format!("{:>5} ", i);
                     let day_justified = if occurs { Yellow.bold().paint(day_justified).to_string() } else { String::from(day_justified) };
                     days[(i as usize - 1) % width].push_str(&day_justified);
-                    // print!("{}", day_justified);
                 };
                 for col in days.iter() {
                     println!("{}", col);

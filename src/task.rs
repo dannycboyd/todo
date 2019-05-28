@@ -16,7 +16,6 @@ pub struct TaskItem {
     pub title: String,
     pub note: String,
     pub completed: Vec<NaiveDate>,
-    // completed: [DateTime<Utc>], // Should use a vector here, maybe. Other solution?
     pub finished: bool,
 }
 
@@ -47,15 +46,13 @@ impl TaskItem {
 
     pub unsafe fn from_raw(raw: RawTaskItem) -> Option<TaskItem> {
         let start = calendar::get_start(raw.start)?;
-        let mut task = TaskItem::new(start, raw.title, raw.note, raw.repetition);
+        let task = TaskItem::new(start, raw.title, raw.note, raw.repetition);
         Some(task)
     }
 
-// How does this go? The
     pub fn apply_modifications(&mut self, mods: Vec<Mods>) {
         for m in mods {
             match m {
-                // fields go here, with functions to handle
                 Mods::Start(raw_start) => match calendar::get_start(raw_start.to_vec()) {
                     Some(start) => self.start = start,
                     None => println!("Can't make {:?} into a date!", raw_start),
@@ -69,26 +66,6 @@ impl TaskItem {
 
     pub fn get_id(&self) -> u32 {
         self.id
-    }
-
-    pub fn set_title(&mut self, title: &str) {
-        self.title = String::from(title)
-    }
-
-    pub fn set_note(&mut self, note: &str) {
-        // println!("set note: {}", note);
-        self.note = String::from(note)
-    }
-
-    pub fn set_rep(&mut self, rep: &str) {
-        match rep {
-            "day" | "daily" => self.repetition = Repetition::Daily,
-            "weeky" | "weekly" => self.repetition = Repetition::Weekly,
-            "month" | "monthly" => self.repetition = Repetition::Monthly,
-            "never" | "none" => self.repetition = Repetition::Never,
-            &_ => println!("Set Repetition: No such repetition: {}", rep)
-
-        }
     }
 }
 
@@ -112,14 +89,6 @@ pub struct RawTaskItem {
     pub finished: bool,
 }
 
-// pub struct RawTaskItem {
-//     pub start: Option<Vec<u32>>,
-//     pub repetition: Option<Repetition>,
-//     pub title: Option<String>,
-//     pub note: Option<String>,
-//     pub finished: Option<bool>,
-// }
-
 impl RawTaskItem {
     pub fn new_empty() -> RawTaskItem {
         RawTaskItem {
@@ -130,12 +99,4 @@ impl RawTaskItem {
             finished: false,
         }
     }
-
-    // pub fn new_defaults() -> RawTaskItem {
-    //     start: Some(vec![]),
-    //     repetition: Some(Repetition::Weekly),
-    //     title: Some(String::from("Title")),
-    //     note: Some(String::from("")),
-    //     finished: Some(false)
-    // }
 }

@@ -12,15 +12,12 @@ use crate::task::{ TaskItem, RawTaskItem, Mods };
 use crate::cal::calendar;
 use crate::DEFAULT_FILE;
 
-use lalrpop_util;
 lalrpop_mod!(pub task_item);
 
 #[derive(Debug)]
 pub enum Args {
-    // Make(Vec<u32>, String, String, calendar::Repetition),
     MakeRaw(RawTaskItem),
     Mods(u32, Vec<Mods>),
-    Test(String),
     Show(calendar::Repetition, Option<Vec<u32>>),
     List,
     Save,
@@ -28,11 +25,9 @@ pub enum Args {
 }
 
 pub struct Cmd {
-    // pub cmd: Vec<String>,
     cmd_raw: String,
     storage: Vec<TaskItem>,
     parser: task_item::CmdParser,
-    // pub last: Option<&TaskItem>,
 }
 
 impl Cmd {
@@ -70,16 +65,11 @@ impl Cmd {
 
     pub fn save(&self, url: &str) -> Result<usize, Box<error::Error>> {
         if self.storage.len() > 0 {
-            let mut file = File::create(DEFAULT_FILE)?;
+            let mut file = File::create(url)?;
             let contents = serde_json::to_string(&self.storage)?;
             write!(file, "{}", contents);
         };
         Ok(self.storage.len())
-    }
-
-    fn unwrap_date(raw: Option<Vec<u32>>) -> Option<NaiveDate> {
-        let date_raw = raw?;
-        calendar::get_start(date_raw)
     }
 
     fn show(&self, kind: calendar::Repetition, date_raw: Option<Vec<u32>>) {
@@ -101,12 +91,6 @@ impl Cmd {
             }
         }
         println!("No task exists with id {}!", id);
-        // match self.storage.iter().find(|task| task.get_id() == id) {
-        //     Some(task) => {
-        //         task.apply_modifications(cmds)
-        //     },
-        //     None => {
-        // }
     }
 
     fn do_cmd(&mut self, cmd: Args) {
@@ -119,9 +103,8 @@ impl Cmd {
                         self.storage.push(task);
                     },
                 }
-            },
+            }
             Args::Mods(id, cmds) => self.modify(id, cmds),
-            Args::Test(val) => (),
             Args::Show(kind, when) => self.show(kind, when),
             Args::List => self.list_all(),
             Args::Save => self.handle_save(DEFAULT_FILE),

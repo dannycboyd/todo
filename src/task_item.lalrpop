@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::task::{TaskItem, RawTaskItem, Mods};
+use crate::task::{RawTaskItem, Mods};
 use crate::cal::calendar::Repetition;
 
 use crate::parser_cmd::{Args};
@@ -82,7 +82,6 @@ Modifications: Vec<Mods> = {
 }
 
 pub Cmd: (Args) = {
-    "test" <words:Words> => Args::Test(words),
     "make" <raw:RawTask> => { Args::MakeRaw(raw) },
     "mod" <id:Num> <modifs:Modifications> => { Args::Mods(id, modifs) },
     "show" <when:Period> => Args::Show(when.0, when.1),
