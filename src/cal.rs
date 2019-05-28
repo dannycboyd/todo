@@ -19,6 +19,7 @@ pub mod calendar {
         Daily,
         Weekly,
         Monthly,
+        Yearly,
         // Custom(MultiDays)
     }
 
@@ -29,6 +30,7 @@ pub mod calendar {
                 Repetition::Daily => "Daily",
                 Repetition::Weekly => "Weekly",
                 Repetition::Monthly => "Monthly",
+                Repetition::Yearly => "Yearly",
                 // Repetition::Custom(_custom) => "Custom"
             };
             write!(f, "{}", printable)
@@ -113,7 +115,8 @@ pub mod calendar {
             Repetition::Never => (),
             Repetition::Daily => (),
             Repetition::Weekly => print_week(start, tasks),
-            Repetition::Monthly => print_month(start, tasks)
+            Repetition::Monthly => print_month(start, tasks),
+            Repetition::Yearly => print_year(start, tasks),
         }
     }
 
@@ -207,6 +210,42 @@ pub mod calendar {
                 }
             }
         }
+    }
+
+    fn next_year(date: &NaiveDate) -> Option<NaiveDate> {
+        NaiveDate::from_yo_opt(date.year() + 1, 1)
+    }
+
+    pub fn print_year(start: NaiveDate, tasks: &Vec<TaskItem>) {
+        let year = start.year();
+        match next_year(&start) {
+            None => println!("Something went wrong trying to get the next year"),
+            Some(next) => {
+                let length: u32 = next.signed_duration_since(NaiveDate::from_yo(year, 1)).num_days() as u32;
+                let width: usize = (length / 7) as usize;
+                let mut days: Vec<String> = vec![String::new(); width];
+                for i in 1..length {
+                    // if i % width == 1 {
+                    //     print!("\n");
+                    // }
+                    let mut occurs = false;
+                    for t in tasks.iter() {
+                        if task_on_day(&t.start, &t.repetition, NaiveDate::from_yo(year, i)) {
+                            // happening.push(((day + i) as u32, t));
+                            occurs = true;
+                        }
+                    }
+                    let day_justified = format!("{:>5} ", i);
+                    let day_justified = if occurs { Yellow.bold().paint(day_justified).to_string() } else { String::from(day_justified) };
+                    days[(i as usize - 1) % width].push_str(&day_justified);
+                    // print!("{}", day_justified);
+                };
+                for col in days.iter() {
+                    println!("{}", col);
+                }
+            }
+        }
+
     }
 
     pub fn get_start(values: Vec<u32>) -> Option<NaiveDate> {

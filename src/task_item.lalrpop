@@ -1,8 +1,8 @@
 use std::str::FromStr;
-use crate::task::{TaskItem, RawTaskItem};
+use crate::task::{TaskItem, RawTaskItem, Mods};
 use crate::cal::calendar::Repetition;
 
-use crate::parser_cmd::Args;
+use crate::parser_cmd::{Args};
 
 grammar;
 
@@ -29,6 +29,8 @@ pub Repeats: Repetition = {
     "weekly" => Repetition::Weekly,
     "m" => Repetition::Monthly,
     "monthly" => Repetition::Monthly,
+    "y" => Repetition::Yearly,
+    "yearly" => Repetition::Yearly,
 }
 
 pub Period: (Repetition, Option<Vec<u32>>) = {
@@ -70,9 +72,19 @@ RawTask: RawTaskItem = {
     () => { RawTaskItem::new_empty() }
 }
 
+Modifications: Vec<Mods> = {
+    <mods:Modifications> <start:Date> => { let mut mods = mods; mods.push(Mods::Start(start)); mods },
+    <mods:Modifications> <rep:Repeats> => { let mut mods = mods; mods.push(Mods::Rep(rep)); mods },
+    <mods:Modifications> "t:" <title:Words> => { let mut mods = mods; mods.push(Mods::Title(title)); mods },
+    <mods:Modifications> "n:" <note:Words> => { let mut mods = mods; mods.push(Mods::Note(note)); mods },
+    () => { vec![] }
+
+}
+
 pub Cmd: (Args) = {
     "test" <words:Words> => Args::Test(words),
     "make" <raw:RawTask> => { Args::MakeRaw(raw) },
+    "mod" <id:Num> <modifs:Modifications> => { Args::Mods(id, modifs) },
     "show" <when:Period> => Args::Show(when.0, when.1),
     "list" => Args::List,
     "help" => Args::Help,

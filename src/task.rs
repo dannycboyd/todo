@@ -20,6 +20,14 @@ pub struct TaskItem {
     pub finished: bool,
 }
 
+#[derive(Debug)]
+pub enum Mods {
+    Start(Vec<u32>),
+    Rep(calendar::Repetition),
+    Title(String),
+    Note(String),
+}
+
 impl TaskItem {
     pub unsafe fn new(start: NaiveDate, title: String, note: String, rep: Repetition) -> TaskItem {
         NEXT_ID += 1;
@@ -34,7 +42,7 @@ impl TaskItem {
         }
     }
     pub unsafe fn set_id_start(highest: u32) {
-        NEXT_ID = highest + 1;
+        NEXT_ID = highest;
     }
 
     pub unsafe fn from_raw(raw: RawTaskItem) -> Option<TaskItem> {
@@ -43,52 +51,21 @@ impl TaskItem {
         Some(task)
     }
 
-    // pub fn apply_raw(raw: RawTaskItem, mut task: TaskItem) -> TaskItem { // I can't quite hold in my head what this should be doing.
-    // // Given a set of optional values, I want (if it exists) to apply them to a task.
-    // // this function will take a TaskItem and mutate its values. Don't return optional
-    // // For the date, if it exists, try to create a new date. If that exists, apply it.
-    // // in all other cases, apply them directly
-    //     match raw.start {
-    //         Some(start_raw) => {
-    //             match calendar::get_start(start_raw) {
-    //                 Some(start) => task.start = start,
-    //                 None => ()
-    //             }
-    //         }
-    //         None => ()
-    //     };
-    //     match raw.repetition {
-    //         Some(rep) => task.rep = rep,
-    //         None => ()
-    //     };
-    //     match raw.title {
-    //         Some(title) => task.title = title,
-    //         None => ()
-    //     };
-    //     match raw.note {
-    //         Some(note) => task.note = note,
-    //         None => ()
-    //     };
-    //     task;
-    // }
-
 // How does this go? The
-    // pub fn apply_modifications(mods: Vec<Modification>) -> Option<TaskItem> {
-    //     for m in mods.iter() {
-    //         match m {
-    //             // fields go here, with functions to handle
-    //             Modification::Start(raw_start) => (),
-    //             Modification::Repetition(rep) => (),
-    //             Modification::Title(title) => (),
-    //             Modification::Note(note) => (),
-    //         }
-    //     }
-    //     // how the heck do we do this
-    //     // Need some structure containing optionals, then check them all?
-    //     // Currently there's only 4 modifiable fields (should be 5, for Finished. Completed won't be modifiable beyond set/unset )
-    //     // Vec<Modifications>, where a modification can be a field and a value
-    //
-    // }
+    pub fn apply_modifications(&mut self, mods: Vec<Mods>) {
+        for m in mods {
+            match m {
+                // fields go here, with functions to handle
+                Mods::Start(raw_start) => match calendar::get_start(raw_start.to_vec()) {
+                    Some(start) => self.start = start,
+                    None => println!("Can't make {:?} into a date!", raw_start),
+                },
+                Mods::Rep(rep) => self.repetition = rep,
+                Mods::Title(title) => self.title = title,
+                Mods::Note(note) => self.note = note,
+            }
+        }
+    }
 
     pub fn get_id(&self) -> u32 {
         self.id
@@ -105,21 +82,11 @@ impl TaskItem {
 
     pub fn set_rep(&mut self, rep: &str) {
         match rep {
-            "day" | "daily" => {
-                self.repetition = Repetition::Daily;
-            },
-            "weeky" | "weekly" => {
-                self.repetition = Repetition::Weekly;
-            }
-            "month" | "monthly" => {
-                self.repetition = Repetition::Monthly;
-            },
-            "never" | "none" => {
-                self.repetition = Repetition::Never;
-            }
-            &_ => {
-                println!("Set Repetition: No such repetition: {}", rep);
-            }
+            "day" | "daily" => self.repetition = Repetition::Daily,
+            "weeky" | "weekly" => self.repetition = Repetition::Weekly,
+            "month" | "monthly" => self.repetition = Repetition::Monthly,
+            "never" | "none" => self.repetition = Repetition::Never,
+            &_ => println!("Set Repetition: No such repetition: {}", rep)
 
         }
     }

@@ -8,7 +8,7 @@ use std::fs;
 use std::error;
 use chrono::NaiveDate;
 
-use crate::task::{ TaskItem, RawTaskItem };
+use crate::task::{ TaskItem, RawTaskItem, Mods };
 use crate::cal::calendar;
 use crate::DEFAULT_FILE;
 
@@ -19,6 +19,7 @@ lalrpop_mod!(pub task_item);
 pub enum Args {
     // Make(Vec<u32>, String, String, calendar::Repetition),
     MakeRaw(RawTaskItem),
+    Mods(u32, Vec<Mods>),
     Test(String),
     Show(calendar::Repetition, Option<Vec<u32>>),
     List,
@@ -88,8 +89,24 @@ impl Cmd {
 
     fn list_all(&self) {
         for t in self.storage.iter() {
-            println!("{}", t.to_string());
+            println!("{}\n", t.to_string());
         }
+    }
+
+    fn modify(&mut self, id: u32, cmds: Vec<Mods>) {
+        for i in 0..self.storage.len() {
+            if self.storage[i].get_id() == id {
+                self.storage[i].apply_modifications(cmds);
+                return;
+            }
+        }
+        println!("No task exists with id {}!", id);
+        // match self.storage.iter().find(|task| task.get_id() == id) {
+        //     Some(task) => {
+        //         task.apply_modifications(cmds)
+        //     },
+        //     None => {
+        // }
     }
 
     fn do_cmd(&mut self, cmd: Args) {
@@ -103,6 +120,7 @@ impl Cmd {
                     },
                 }
             },
+            Args::Mods(id, cmds) => self.modify(id, cmds),
             Args::Test(val) => (),
             Args::Show(kind, when) => self.show(kind, when),
             Args::List => self.list_all(),
