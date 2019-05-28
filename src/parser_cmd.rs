@@ -84,10 +84,10 @@ impl Cmd {
     }
 
     fn modify(&mut self, id: u32, cmds: Vec<Mods>) {
-        for i in 0..self.storage.len() {
-            if self.storage[i].get_id() == id {
-                self.storage[i].apply_modifications(cmds);
-                return;
+        for mut t in &mut self.storage {
+            if t.get_id() == id {
+                t.apply_modifications(cmds);
+                return
             }
         }
         println!("No task exists with id {}!", id);
