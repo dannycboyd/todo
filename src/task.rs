@@ -67,6 +67,29 @@ impl TaskItem {
     pub fn get_id(&self) -> u32 {
         self.id
     }
+
+    pub fn mark_completed(&mut self, day: NaiveDate) {
+        let mut i: usize = 0;
+        while i < self.completed.len() {
+            let curr = self.completed[i];
+            if curr == day {
+                println!("Already done on {}", day);
+                return;
+            } else if curr < day {
+                self.completed.insert(i, day);
+                println!("Inserted at index {}", i);
+                return;
+            }
+            i += 1;
+        }
+        println!("put it at the end");
+        self.completed.push(day)
+    }
+
+    pub fn mark_finished(&mut self, day: NaiveDate) {
+        self.mark_completed(day);
+        self.finished = true;
+    }
 }
 
 impl fmt::Display for TaskItem {

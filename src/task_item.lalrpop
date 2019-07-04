@@ -78,13 +78,14 @@ Modifications: Vec<Mods> = {
     <mods:Modifications> "t:" <title:Words> => { let mut mods = mods; mods.push(Mods::Title(title)); mods },
     <mods:Modifications> "n:" <note:Words> => { let mut mods = mods; mods.push(Mods::Note(note)); mods },
     () => { vec![] }
-
 }
 
 pub Cmd: (Args) = {
     "make" <raw:RawTask> => { Args::MakeRaw(raw) },
     "mod" <id:Num> <modifs:Modifications> => { Args::Mods(id, modifs) },
     "show" <when:Period> => Args::Show(when.0, when.1),
+    "do" <id:Num> => { Args::Do(id) },
+    "finish" <id:Num> => { Args::Finish(id) }, 
     "list" => Args::List,
     "help" => Args::Help,
     "save" => Args::Save,

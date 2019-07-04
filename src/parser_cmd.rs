@@ -16,12 +16,14 @@ lalrpop_mod!(pub task_item);
 
 #[derive(Debug)]
 pub enum Args {
+    Do(u32),
+    Finish(u32),
+    Help,
+    List,
     MakeRaw(RawTaskItem),
     Mods(u32, Vec<Mods>),
-    Show(calendar::Repetition, Option<Vec<u32>>),
-    List,
     Save,
-    Help
+    Show(calendar::Repetition, Option<Vec<u32>>)
 }
 
 pub struct Cmd {
@@ -67,7 +69,10 @@ impl Cmd {
         if self.storage.len() > 0 {
             let mut file = File::create(url)?;
             let contents = serde_json::to_string(&self.storage)?;
-            write!(file, "{}", contents);
+            match write!(file, "{}", contents) {
+                Ok(foo) => println!("Saved!"),
+                Err(e) => println!("An error occurred! {:?}", e)
+            };
         };
         Ok(self.storage.len())
     }
@@ -83,19 +88,44 @@ impl Cmd {
         }
     }
 
+    fn find_task_by_id(&mut self, id: u32) -> Option<&mut TaskItem> {
+        self.storage.iter_mut().find(|task| task.get_id() == id)
+    }
+
     fn modify(&mut self, id: u32, cmds: Vec<Mods>) {
-        for mut t in &mut self.storage {
-            if t.get_id() == id {
-                t.apply_modifications(cmds);
-                return
-            }
+        match self.find_task_by_id(id) {
+            Some(task) => {
+                task.apply_modifications(cmds);
+            },
+            None => println!("No task exists with id {}!", id),
         }
-        println!("No task exists with id {}!", id);
+    }
+
+    fn do_task(&mut self, id: u32) {
+        match self.find_task_by_id(id) {
+            Some(task) => {
+                println!("Mark done today");
+                task.mark_completed(calendar::date_or_today(None));
+                println!("Done! {:?}", task)
+            },
+            None => println!("Can't find task with id {}", id),
+        }
+    }
+
+    fn finish_task(&mut self, id: u32) {
+        match self.find_task_by_id(id) {
+            Some(task) => {
+                println!("Mark finished today");
+                task.mark_finished(calendar::date_or_today(None));
+                println!("Finished {}", task)
+            },
+            None => println!("Can't find task with id {}", id),
+        }
     }
 
     fn do_cmd(&mut self, cmd: Args) {
         match cmd {
-            Args::MakeRaw(raw) => unsafe {
+            Args::MakeRaw(raw) => unsafe { // move this into a new function
                 match TaskItem::from_raw(raw) {
                     None => println!("An error occurred, likely the dates couldn't be parsed into real dates"),
                     Some(task) => {
@@ -103,7 +133,9 @@ impl Cmd {
                         self.storage.push(task);
                     },
                 }
-            }
+            },
+            Args::Do(id) => self.do_task(id),
+            Args::Finish(id) => self.finish_task(id),
             Args::Mods(id, cmds) => self.modify(id, cmds),
             Args::Show(kind, when) => self.show(kind, when),
             Args::List => self.list_all(),
