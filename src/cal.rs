@@ -23,6 +23,12 @@ pub mod calendar {
         // Custom(MultiDays)
     }
 
+    pub enum Occurrence {
+        Todo,
+        Nah,
+        Done,
+    }
+
     impl fmt::Display for Repetition {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             let printable = match self {
@@ -99,13 +105,30 @@ pub mod calendar {
         NaiveDate::from_ymd_opt(year, month, 1)
     }
 
-    pub fn task_on_day(start: &NaiveDate, rep: &Repetition, check: NaiveDate) -> bool {
+    pub fn task_on_day(task: &TaskItem, check: NaiveDate) -> bool {
+        let start = task.start;
+        let rep = &task.repetition;
+        if task.finished {
+            let last_day = task.completed.last().unwrap();
+            if last_day < &check { return false }
+        }
         match rep {
-            Repetition::Never => start == &check,
-            Repetition::Daily => start <= &check,
-            Repetition::Weekly => start <= &check && start.weekday() == check.weekday(),
-            Repetition::Monthly => start <= &check && start.day() == check.day(),
+            Repetition::Never => start == check,
+            Repetition::Daily => start <= check,
+            Repetition::Weekly => start <= check && start.weekday() == check.weekday(),
+            Repetition::Monthly => start <= check && start.day() == check.day(),
             _ => false
+        }
+    }
+
+    pub fn show_day_for_task(task: &TaskItem, check: NaiveDate) -> Occurrence {
+        if task.done_on_day(check) {
+            Occurrence::Done
+        } else {
+            match task_on_day(task, check) {
+                true => Occurrence::Todo,
+                false => Occurrence::Nah
+            }
         }
     }
 
@@ -143,7 +166,7 @@ pub mod calendar {
             first = (first + 1) % 7;
             let mut occurs = false;
             for t in tasks.iter() {
-                if task_on_day(&t.start, &t.repetition, NaiveDate::from_ymd(year, month, i as u32)) {
+                if task_on_day(&t, NaiveDate::from_ymd(year, month, i as u32)) {
                     occurs = true;
                     break;
                 }
@@ -185,7 +208,7 @@ pub mod calendar {
                             }
                             let mut occurs = false;
                             for t in tasks.iter() {
-                                if task_on_day(&t.start, &t.repetition, NaiveDate::from_ymd(year, month, (day + i) as u32)) {
+                                if task_on_day(&t, NaiveDate::from_ymd(year, month, (day + i) as u32)) {
                                     happening.push(((day + i) as u32, t));
                                     occurs = true;
                                 }
@@ -226,7 +249,7 @@ pub mod calendar {
                 for i in 1..length {
                     let mut occurs = false;
                     for t in tasks.iter() {
-                        if task_on_day(&t.start, &t.repetition, NaiveDate::from_yo(year, i)) {
+                        if task_on_day(&t, NaiveDate::from_yo(year, i)) {
                             occurs = true;
                         }
                     }

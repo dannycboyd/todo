@@ -10,8 +10,8 @@ mod parser_cmd;
 use parser_cmd::Cmd;
 
 mod cal;
-
 mod task;
+mod print;
 
 #[macro_use] extern crate lalrpop_util;
 lalrpop_mod!(pub task_item);

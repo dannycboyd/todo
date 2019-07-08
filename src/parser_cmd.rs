@@ -1,16 +1,17 @@
 // command line crate
 use std::io;
 use std::io::{Write};
-use std::cmp::min;
+// use std::cmp::min;
 use serde_json;
 use std::fs::File;
 use std::fs;
 use std::error;
-use chrono::NaiveDate;
+// use chrono::NaiveDate;
 
 use crate::task::{ TaskItem, RawTaskItem, Mods };
 use crate::cal::calendar;
 use crate::DEFAULT_FILE;
+use crate::print;
 
 lalrpop_mod!(pub task_item);
 
@@ -157,6 +158,7 @@ impl Cmd {
     }
 
     pub fn exec(&mut self) {
+        print::test();
         loop {
             self.cmd_raw = String::new();
             match io::stdin().read_line(&mut self.cmd_raw) {

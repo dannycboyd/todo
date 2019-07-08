@@ -90,6 +90,13 @@ impl TaskItem {
         self.mark_completed(day);
         self.finished = true;
     }
+
+    pub fn done_on_day(&self, day: NaiveDate) -> bool {
+        match self.completed.iter().find(|d| *d == &day) {
+            Some(d) => true,
+            None => false,
+        }
+    }
 }
 
 impl fmt::Display for TaskItem {
