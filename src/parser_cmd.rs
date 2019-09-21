@@ -8,13 +8,13 @@ use std::fs;
 use std::error;
 // use chrono::NaiveDate;
 
-use crate::task::{ TaskItem, RawTaskItem, Mods };
-use crate::cal::calendar;
-use crate::DEFAULT_FILE;
-use crate::print;
+use super::task::{ TaskItem, RawTaskItem, Mods };
+use super::cal::calendar;
+use super::DEFAULT_FILE;
+// use crate::print;
 
-lalrpop_mod!(pub task_item);
-
+// lalrpop_mod!(pub task_item);
+use super::task_item;
 #[derive(Debug)]
 pub enum Args {
     Do(u32),
@@ -158,7 +158,6 @@ impl Cmd {
     }
 
     pub fn exec(&mut self) {
-        print::test();
         loop {
             self.cmd_raw = String::new();
             match io::stdin().read_line(&mut self.cmd_raw) {

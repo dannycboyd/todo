@@ -5,18 +5,14 @@ extern crate chrono;
 
 // mod cmd;
 // use cmd::Cmd;
+extern crate to_do;
+use to_do::parser_cmd::Cmd;
 
-mod parser_cmd;
-use parser_cmd::Cmd;
+// mod print;
 
-mod cal;
-mod task;
-mod print;
-
-#[macro_use] extern crate lalrpop_util;
-lalrpop_mod!(pub task_item);
-
-const DEFAULT_FILE: &str = "./caldata.json";
+// #[macro_use] extern crate lalrpop_util;
+// lalrpop_mod!(pub task_item);
+use to_do::task_item;
 
 fn main () {
     let date_p = task_item::DateParser::new();
