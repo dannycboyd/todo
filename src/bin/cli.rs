@@ -7,13 +7,18 @@ use to_do::parser_cmd::{Cmd, Args};
 use to_do::task_item;
 use to_do::DEFAULT_FILE;
 
-enum Error {
-    ReadError,
-    ParseError(String),
-    Quit
-}
+use to_do::Error;
+use to_do::Error::*;
 
 type CmdResult<T> = std::result::Result<T, Error>;
+
+fn parse(parser: &task_item::CmdParser, cmd_raw: &str) -> CmdResult<Args> {
+    parser.parse(cmd_raw)
+        .or_else(|err| {
+            let foo = format!("{}", err);
+            Err(TDParseError(foo))
+        })
+}
 
 fn run() {
     let parser = task_item::CmdParser::new();
@@ -21,14 +26,8 @@ fn run() {
     loop {
         let mut cmd_raw = String::new();
         let something: CmdResult<()> = io::stdin().read_line(&mut cmd_raw)
-            .or_else(|_| { Err(Error::ReadError) })
-            .and_then(|_len| {
-                parser.parse(&cmd_raw)
-                    .or_else(|err| {
-                        let foo = format!("{}", err);
-                        Err(Error::ParseError(foo))
-                    })
-            })
+            .or_else(|_| { Err(TDReadError) })
+            .and_then(|_len| { parse(&parser, &cmd_raw) })
             .and_then(|cmd| {
                  match cmd {
                     Args::MakeRaw(raw) => cmdline.make_raw(raw),
@@ -39,15 +38,15 @@ fn run() {
                     Args::List => cmdline.list_all(),
                     Args::Save => cmdline.handle_save(DEFAULT_FILE),
                     Args::Help => (),
-                    Args::Quit => return Err(Error::Quit),
+                    Args::Quit => return Err(TDQuit),
                 };
                 Ok(())
             });
         match something {
             Ok(_) => (),
-            Err(Error::Quit) => break,
-            Err(Error::ParseError(e)) => println!("Parser error: {}", e),
-            Err(Error::ReadError) => println!("An error occurred reading input!"),
+            Err(TDQuit) => break,
+            Err(TDParseError(e)) => println!("Parser error: {}", e),
+            Err(TDReadError) => println!("An error occurred reading input!"),
         }
     }
 }

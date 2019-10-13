@@ -1,22 +1,14 @@
 // command line crate
 use std::io::{Write};
-// use std::cmp::min;
+
 use serde_json;
 use std::fs::File;
 use std::fs;
 use std::error;
-// use chrono::NaiveDate;
 
 use super::task::{ TaskItem, RawTaskItem, Mods };
 use super::cal;
 use super::DEFAULT_FILE;
-// use crate::print;
-
-/**
- * this file needs to be refactored into library functions and command parsing functions
- */
-
-// lalrpop_mod!(pub task_item);
 
 #[derive(Debug)]
 pub enum Args {
