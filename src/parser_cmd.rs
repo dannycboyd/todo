@@ -151,26 +151,14 @@ impl Cmd {
         }
     }
 
-    fn parse_cmd(&mut self) {
-        match self.parser.parse(&self.cmd_raw) {
+    pub fn parse_cmd(&mut self, cmd_raw: &str) {
+        match self.parser.parse(cmd_raw) {
             Ok(cmd) => {
                 println!("parsed command: {:?}", cmd);
                 self.do_cmd(cmd);
             },
             Err(e) => {
                 println!("An error occurred: {}", e);
-            }
-        }
-    }
-
-    pub fn exec(&mut self) {
-        loop {
-            self.cmd_raw = String::new();
-            match io::stdin().read_line(&mut self.cmd_raw) {
-                Err(e) => println!("An error occurred reading line: {:?}", e),
-                Ok(_len) => {
-                    self.parse_cmd();
-                }
             }
         }
     }

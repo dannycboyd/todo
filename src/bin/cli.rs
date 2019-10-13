@@ -1,18 +1,21 @@
 extern crate chrono;
-// use chrono::prelude::*; // Utc, Local
-// use chrono::Date;
 
+use std::io;
 
-// mod cmd;
-// use cmd::Cmd;
 extern crate to_do;
 use to_do::parser_cmd::Cmd;
-
-// mod print;
-
-// #[macro_use] extern crate lalrpop_util;
-// lalrpop_mod!(pub task_item);
 use to_do::task_item;
+
+fn run() {
+    let mut cmdline = Cmd::new();
+    loop {
+        let mut cmd = String::new();
+        match io::stdin().read_line(&mut cmd) {
+            Err(e) => println!("An error occurred reading line: {:?}", e),
+            Ok(_len) => cmdline.parse_cmd(&cmd)
+        }
+    }
+}
 
 fn main () {
     let date_p = task_item::DateParser::new();
@@ -32,7 +35,7 @@ fn main () {
     println!("{:?}", per_p.parse("m 04-20"));
     println!("{:?}", per_p.parse("d"));
 
-    let mut cmdline = Cmd::new();
+
+    run();
     // cmdline.handle_load(DEFAULT_FILE);
-    cmdline.exec();
 }
