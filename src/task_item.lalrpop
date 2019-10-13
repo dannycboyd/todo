@@ -89,4 +89,5 @@ pub Cmd: (Args) = {
     "list" => Args::List,
     "help" => Args::Help,
     "save" => Args::Save,
+    "q" => Args::Quit,
 }

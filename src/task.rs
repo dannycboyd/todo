@@ -93,7 +93,7 @@ impl TaskItem {
 
     pub fn done_on_day(&self, day: NaiveDate) -> bool {
         match self.completed.iter().find(|d| *d == &day) {
-            Some(d) => true,
+            Some(_d) => true,
             None => false,
         }
     }

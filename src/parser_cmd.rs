@@ -1,5 +1,4 @@
 // command line crate
-use std::io;
 use std::io::{Write};
 // use std::cmp::min;
 use serde_json;
@@ -18,7 +17,7 @@ use super::DEFAULT_FILE;
  */
 
 // lalrpop_mod!(pub task_item);
-use super::task_item;
+
 #[derive(Debug)]
 pub enum Args {
     Do(u32),
@@ -28,18 +27,17 @@ pub enum Args {
     MakeRaw(RawTaskItem),
     Mods(u32, Vec<Mods>),
     Save,
-    Show(cal::Repetition, Option<Vec<u32>>)
+    Show(cal::Repetition, Option<Vec<u32>>),
+    Quit,
 }
 
 pub struct Cmd {
-    cmd_raw: String,
     storage: Vec<TaskItem>,
-    parser: task_item::CmdParser,
 }
 
 impl Cmd {
     pub fn new() -> Cmd {
-        let mut me = Cmd { cmd_raw: String::new(), storage: vec![], parser: task_item::CmdParser::new() };
+        let mut me = Cmd { storage: vec![] };
         me.handle_load(DEFAULT_FILE);
         me
     }
@@ -75,19 +73,19 @@ impl Cmd {
             let mut file = File::create(url)?;
             let contents = serde_json::to_string(&self.storage)?;
             match write!(file, "{}", contents) {
-                Ok(foo) => println!("Saved!"),
+                Ok(_foo) => println!("Saved!"),
                 Err(e) => println!("An error occurred! {:?}", e)
             };
         };
         Ok(self.storage.len())
     }
 
-    fn show(&self, kind: cal::Repetition, date_raw: Option<Vec<u32>>) {
+    pub fn show(&self, kind: cal::Repetition, date_raw: Option<Vec<u32>>) {
         let start = cal::date_or_today(date_raw);
         cal::show_type(kind, start, &self.storage);
     }
 
-    fn list_all(&self) {
+    pub fn list_all(&self) {
         for t in self.storage.iter() {
             println!("{}\n", t.to_string());
         }
@@ -97,7 +95,7 @@ impl Cmd {
         self.storage.iter_mut().find(|task| task.get_id() == id)
     }
 
-    fn modify(&mut self, id: u32, cmds: Vec<Mods>) {
+    pub fn modify(&mut self, id: u32, cmds: Vec<Mods>) {
         match self.find_task_by_id(id) {
             Some(task) => {
                 task.apply_modifications(cmds);
@@ -106,7 +104,7 @@ impl Cmd {
         }
     }
 
-    fn do_task(&mut self, id: u32) {
+    pub fn do_task(&mut self, id: u32) {
         match self.find_task_by_id(id) {
             Some(task) => {
                 println!("Mark done today");
@@ -117,7 +115,7 @@ impl Cmd {
         }
     }
 
-    fn finish_task(&mut self, id: u32) {
+    pub fn finish_task(&mut self, id: u32) {
         match self.find_task_by_id(id) {
             Some(task) => {
                 println!("Mark finished today");
@@ -128,39 +126,15 @@ impl Cmd {
         }
     }
 
-    // this part needs to be moved
-
-    fn do_cmd(&mut self, cmd: Args) {
-        match cmd {
-            Args::MakeRaw(raw) => unsafe { // move this into a new function
-                match TaskItem::from_raw(raw) {
-                    None => println!("An error occurred, likely the dates couldn't be parsed into real dates"),
-                    Some(task) => {
-                        println!("New task: {:?}", task);
-                        self.storage.push(task);
-                    },
+    pub fn make_raw(&mut self, raw: RawTaskItem) {
+        unsafe {
+            match TaskItem::from_raw(raw) {
+                None => println!("An error occurred parsing the raw task item. Likely an issue with the dates"),
+                Some(task) => {
+                    println!("New task: {:?}", task);
+                    self.storage.push(task);
                 }
-            },
-            Args::Do(id) => self.do_task(id),
-            Args::Finish(id) => self.finish_task(id),
-            Args::Mods(id, cmds) => self.modify(id, cmds),
-            Args::Show(kind, when) => self.show(kind, when),
-            Args::List => self.list_all(),
-            Args::Save => self.handle_save(DEFAULT_FILE),
-            Args::Help => (),
-        }
-    }
-
-    pub fn parse_cmd(&mut self, cmd_raw: &str) {
-        match self.parser.parse(cmd_raw) {
-            Ok(cmd) => {
-                println!("parsed command: {:?}", cmd);
-                self.do_cmd(cmd);
-            },
-            Err(e) => {
-                println!("An error occurred: {}", e);
             }
         }
     }
-
 }
