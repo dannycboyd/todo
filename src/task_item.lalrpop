@@ -1,6 +1,6 @@
 use std::str::FromStr;
 use crate::task::{RawTaskItem, Mods};
-use crate::cal::calendar::Repetition;
+use crate::cal::Repetition;
 
 use crate::parser_cmd::{Args};
 

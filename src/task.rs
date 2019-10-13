@@ -2,8 +2,8 @@ extern crate chrono;
 // use chrono::prelude::*; // Utc, Local
 use serde::{Serialize, Deserialize};
 use chrono::NaiveDate;
-use crate::cal::calendar::{Repetition};
-use crate::cal::calendar;
+use crate::cal::{Repetition};
+use crate::cal;
 use std::fmt;
 // use crate::cal::calendar;
 static mut NEXT_ID: u32 = 1;
@@ -22,7 +22,7 @@ pub struct TaskItem {
 #[derive(Debug)]
 pub enum Mods {
     Start(Vec<u32>),
-    Rep(calendar::Repetition),
+    Rep(cal::Repetition),
     Title(String),
     Note(String),
 }
@@ -45,7 +45,7 @@ impl TaskItem {
     }
 
     pub unsafe fn from_raw(raw: RawTaskItem) -> Option<TaskItem> {
-        let start = calendar::get_start(raw.start)?;
+        let start = cal::get_start(raw.start)?;
         let task = TaskItem::new(start, raw.title, raw.note, raw.repetition);
         Some(task)
     }
@@ -53,7 +53,7 @@ impl TaskItem {
     pub fn apply_modifications(&mut self, mods: Vec<Mods>) {
         for m in mods {
             match m {
-                Mods::Start(raw_start) => match calendar::get_start(raw_start.to_vec()) {
+                Mods::Start(raw_start) => match cal::get_start(raw_start.to_vec()) {
                     Some(start) => self.start = start,
                     None => println!("Can't make {:?} into a date!", raw_start),
                 },

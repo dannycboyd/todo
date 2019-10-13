@@ -11,7 +11,7 @@ use hyper::{Method, StatusCode};
 
 extern crate futures;
 use futures::future;
-const PHRASE: &str = "Hello, World!";
+use futures::Stream;
 
 type BoxFut = Box<dyn Future<Item=Response<Body>, Error=hyper::Error> + Send>;
 
@@ -24,6 +24,20 @@ fn echo(req: Request<Body>) -> BoxFut {
         },
         (&Method::POST, "/echo") => {
             *response.body_mut() = req.into_body();
+        },
+        (&Method::POST, "/echo/reverse") => {
+            let reversed = req
+                .into_body()
+                .concat2()
+                .map(move |chunk| {
+                    let body = chunk.iter()
+                        .rev()
+                        .cloned()
+                        .collect::<Vec<u8>>();
+                    *response.body_mut() = Body::from(body);
+                    response
+                });
+            return Box::new(reversed)
         },
         _ => {
             *response.status_mut() = StatusCode::NOT_FOUND;
@@ -50,8 +64,4 @@ fn main () {
 
     // Run this server for... forever!
     hyper::rt::run(server);
-}
-
-fn hello_world(_req: Request<Body>) -> Response<Body> {
-    Response::new(Body::from(PHRASE))
 }

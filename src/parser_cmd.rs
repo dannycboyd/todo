@@ -9,9 +9,13 @@ use std::error;
 // use chrono::NaiveDate;
 
 use super::task::{ TaskItem, RawTaskItem, Mods };
-use super::cal::calendar;
+use super::cal;
 use super::DEFAULT_FILE;
 // use crate::print;
+
+/**
+ * this file needs to be refactored into library functions and command parsing functions
+ */
 
 // lalrpop_mod!(pub task_item);
 use super::task_item;
@@ -24,7 +28,7 @@ pub enum Args {
     MakeRaw(RawTaskItem),
     Mods(u32, Vec<Mods>),
     Save,
-    Show(calendar::Repetition, Option<Vec<u32>>)
+    Show(cal::Repetition, Option<Vec<u32>>)
 }
 
 pub struct Cmd {
@@ -78,9 +82,9 @@ impl Cmd {
         Ok(self.storage.len())
     }
 
-    fn show(&self, kind: calendar::Repetition, date_raw: Option<Vec<u32>>) {
-        let start = calendar::date_or_today(date_raw);
-        calendar::show_type(kind, start, &self.storage);
+    fn show(&self, kind: cal::Repetition, date_raw: Option<Vec<u32>>) {
+        let start = cal::date_or_today(date_raw);
+        cal::show_type(kind, start, &self.storage);
     }
 
     fn list_all(&self) {
@@ -106,7 +110,7 @@ impl Cmd {
         match self.find_task_by_id(id) {
             Some(task) => {
                 println!("Mark done today");
-                task.mark_completed(calendar::date_or_today(None));
+                task.mark_completed(cal::date_or_today(None));
                 println!("Done! {:?}", task)
             },
             None => println!("Can't find task with id {}", id),
@@ -117,12 +121,14 @@ impl Cmd {
         match self.find_task_by_id(id) {
             Some(task) => {
                 println!("Mark finished today");
-                task.mark_finished(calendar::date_or_today(None));
+                task.mark_finished(cal::date_or_today(None));
                 println!("Finished {}", task)
             },
             None => println!("Can't find task with id {}", id),
         }
     }
+
+    // this part needs to be moved
 
     fn do_cmd(&mut self, cmd: Args) {
         match cmd {

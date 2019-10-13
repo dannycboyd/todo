@@ -1,8 +1,8 @@
 // auto-generated: "lalrpop 0.16.3"
-// sha256: 1457183c37dc1a17a420c9ef5cc3915dcc978a29ae7e0c6a1252a98bedcb8
+// sha256: 81accac7ef8b93a3a1f6be436a67820542a1e5c245b7fd4712eedf7e573a54
 use std::str::FromStr;
 use crate::task::{RawTaskItem, Mods};
-use crate::cal::calendar::Repetition;
+use crate::cal::Repetition;
 use crate::parser_cmd::{Args};
 #[allow(unused_extern_crates)]
 extern crate lalrpop_util as __lalrpop_util;
@@ -15,7 +15,7 @@ mod __parse__Cmd {
 
     use std::str::FromStr;
     use crate::task::{RawTaskItem, Mods};
-    use crate::cal::calendar::Repetition;
+    use crate::cal::Repetition;
     use crate::parser_cmd::{Args};
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
@@ -2285,7 +2285,7 @@ mod __parse__Date {
 
     use std::str::FromStr;
     use crate::task::{RawTaskItem, Mods};
-    use crate::cal::calendar::Repetition;
+    use crate::cal::Repetition;
     use crate::parser_cmd::{Args};
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
@@ -4279,7 +4279,7 @@ mod __parse__Period {
 
     use std::str::FromStr;
     use crate::task::{RawTaskItem, Mods};
-    use crate::cal::calendar::Repetition;
+    use crate::cal::Repetition;
     use crate::parser_cmd::{Args};
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
@@ -6345,7 +6345,7 @@ mod __parse__Repeats {
 
     use std::str::FromStr;
     use crate::task::{RawTaskItem, Mods};
-    use crate::cal::calendar::Repetition;
+    use crate::cal::Repetition;
     use crate::parser_cmd::{Args};
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
@@ -8357,7 +8357,7 @@ mod __parse__Words {
 
     use std::str::FromStr;
     use crate::task::{RawTaskItem, Mods};
-    use crate::cal::calendar::Repetition;
+    use crate::cal::Repetition;
     use crate::parser_cmd::{Args};
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
@@ -10343,7 +10343,7 @@ mod __intern_token {
     #![allow(unused_imports)]
     use std::str::FromStr;
     use crate::task::{RawTaskItem, Mods};
-    use crate::cal::calendar::Repetition;
+    use crate::cal::Repetition;
     use crate::parser_cmd::{Args};
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;

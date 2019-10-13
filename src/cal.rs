@@ -1,6 +1,5 @@
 // repetition is defined here
 // add functions for displaying repetition inside range
-pub mod calendar {
     use serde::{Serialize, Deserialize};
     use chrono::NaiveDate;
     use chrono::Local; // Utc, Local
@@ -287,4 +286,3 @@ pub mod calendar {
             None => Local::now().date().naive_local()
         }
     }
-}
