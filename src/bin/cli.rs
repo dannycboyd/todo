@@ -7,16 +7,21 @@ use to_do::parser_cmd::{Cmd, Args};
 use to_do::task_item;
 use to_do::DEFAULT_FILE;
 
-use to_do::Error;
-use to_do::Error::*;
+use to_do::TDError;
+use to_do::TDError::*;
 
-type CmdResult<T> = std::result::Result<T, Error>;
+type CmdResult<T> = std::result::Result<T, TDError>;
+
+fn read(cmd_raw: &mut String) -> CmdResult<usize> {
+    let len = io::stdin().read_line(cmd_raw)?;
+    Ok(len)
+}
 
 fn parse(parser: &task_item::CmdParser, cmd_raw: &str) -> CmdResult<Args> {
     parser.parse(cmd_raw)
         .or_else(|err| {
             let foo = format!("{}", err);
-            Err(TDParseError(foo))
+            Err(ParseError(foo))
         })
 }
 
@@ -25,8 +30,7 @@ fn run() {
     let mut cmdline = Cmd::new();
     loop {
         let mut cmd_raw = String::new();
-        let something: CmdResult<()> = io::stdin().read_line(&mut cmd_raw)
-            .or_else(|_| { Err(TDReadError) })
+        let something: CmdResult<()> = read(&mut cmd_raw)
             .and_then(|_len| { parse(&parser, &cmd_raw) })
             .and_then(|cmd| {
                  match cmd {
@@ -36,17 +40,18 @@ fn run() {
                     Args::Mods(id, cmds) => cmdline.modify(id, cmds),
                     Args::Show(kind, when) => cmdline.show(kind, when),
                     Args::List => cmdline.list_all(),
-                    Args::Save => cmdline.handle_save(DEFAULT_FILE),
+                    Args::Save => return cmdline.save(DEFAULT_FILE),
                     Args::Help => (),
-                    Args::Quit => return Err(TDQuit),
+                    Args::Quit => return Err(Quit),
                 };
                 Ok(())
             });
         match something {
             Ok(_) => (),
-            Err(TDQuit) => break,
-            Err(TDParseError(e)) => println!("Parser error: {}", e),
-            Err(TDReadError) => println!("An error occurred reading input!"),
+            Err(Quit) => break,
+            Err(ParseError(e)) => eprintln!("Parser error: {}", e),
+            Err(IOError(e)) => eprintln!("IO Error: {}", e),
+            Err(_) => eprintln!("An error occurred"),
         }
     }
 }

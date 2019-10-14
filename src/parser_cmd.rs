@@ -7,7 +7,7 @@ use std::fs;
 use std::error;
 
 use super::task::{ TaskItem, RawTaskItem, Mods };
-use super::cal;
+use super::{cal, TDError};
 use super::DEFAULT_FILE;
 
 #[derive(Debug)]
@@ -53,23 +53,16 @@ impl Cmd {
         Ok(len)
     }
 
-    pub fn handle_save(&self, url: &str) {
-        match self.save(url) {
-            Ok(count) => println!("Saved {} tasks", count),
-            Err(e) => println!("Error occurred during save: {:?}", e),
-        }
-    }
-
-    pub fn save(&self, url: &str) -> Result<usize, Box<error::Error>> {
+    pub fn save(&self, url: &str) -> Result<(), TDError> {
         if self.storage.len() > 0 {
             let mut file = File::create(url)?;
-            let contents = serde_json::to_string(&self.storage)?;
-            match write!(file, "{}", contents) {
-                Ok(_foo) => println!("Saved!"),
-                Err(e) => println!("An error occurred! {:?}", e)
-            };
-        };
-        Ok(self.storage.len())
+            let contents = serde_json::to_string(&self.storage)
+                .or_else(|_e| { Err(TDError::SerializeError) })?; // 3 - couldn't serialize output: if this happens, serde is broken
+            write!(file, "{}", contents)?;
+            Ok(())
+        } else {
+            Err(TDError::IOError(String::from("No items to save"))) // 1 - empty
+        }
     }
 
     pub fn show(&self, kind: cal::Repetition, date_raw: Option<Vec<u32>>) {
