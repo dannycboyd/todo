@@ -2,66 +2,52 @@ extern crate chrono;
 extern crate to_do;
 use to_do::parser_cmd::Cmd;
 use to_do::task_item;
+use to_do::task::TaskItem;
+use chrono::NaiveDate;
+use to_do::cal::Repetition;
 
-extern crate hyper;
-use hyper::{Body, Request, Response, Server};
-use hyper::rt::Future;
-use hyper::service::service_fn;
-use hyper::{Method, StatusCode};
+// extern crate hyper;
+// use hyper::{Body, Request, Response, Server};
+// use hyper::rt::Future;
+// use hyper::service::service_fn;
+// use hyper::{Method, StatusCode};
 
-extern crate futures;
-use futures::future;
-use futures::Stream;
+use futures::FutureExt;
+use tokio_postgres::{NoTls, Error, Row};
 
-type BoxFut = Box<dyn Future<Item=Response<Body>, Error=hyper::Error> + Send>;
+// type BoxFut = Box<dyn Future<Item=Response<Body>, Error=hyper::Error> + Send>;
 
-fn echo(req: Request<Body>) -> BoxFut {
-    let mut response = Response::new(Body::empty());
-
-    match (req.method(), req.uri().path()) {
-        (&Method::GET, "/") => {
-            *response.body_mut() = Body::from("Try POSTing data to /echo");
-        },
-        (&Method::POST, "/echo") => {
-            *response.body_mut() = req.into_body();
-        },
-        (&Method::POST, "/echo/reverse") => {
-            let reversed = req
-                .into_body()
-                .concat2()
-                .map(move |chunk| {
-                    let body = chunk.iter()
-                        .rev()
-                        .cloned()
-                        .collect::<Vec<u8>>();
-                    *response.body_mut() = Body::from(body);
-                    response
-                });
-            return Box::new(reversed)
-        },
-        _ => {
-            *response.status_mut() = StatusCode::NOT_FOUND;
-        }
-
-    }
-    Box::new(future::ok(response))
+fn fromRow(row: Row) -> TaskItem {
+    let id: u32 = row.get(0);
+    let date: NaiveDate = row.get("start");
+    let rep: &str = row.get("repeats");
+    let title: &str = row.get("title");
+    let note: &str = row.get("note");
+    let finished: bool = row.get("finished");
+    TaskItem::new_by_id(id, date, title.to_string(), note.to_string(), Repetition::Monthly)
 }
 
-fn main () {
-    // This is our socket address...
-    let addr = ([127, 0, 0, 1], 3000).into();
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+    let (mut client, connection) =
+        tokio_postgres::connect("host=localhost user=dannyboyd dbname=caldata", NoTls).await?;
 
-    // A `Service` is needed for every connection, so this
-    // creates one from our `hello_world` function.
-    let new_svc = || {
-        // service_fn_ok converts our function into a `Service`
-        service_fn(echo)
-    };
+    let connection = connection.map(|r| {
+        if let Err(e) = r {
+            eprintln!("connection error: {}", e);
+        }
+    });
+    tokio::spawn(connection);
 
-    let server = Server::bind(&addr)
-        .serve(new_svc)
-        .map_err(|e| eprintln!("server error: {}", e));
+    let stmt = client.prepare("SELECT * from tasks").await?;
 
-    // Run this server for... forever!
-    hyper::rt::run(server);
+    let rows = client
+        .query(&stmt, &[])
+        .await?;
+
+    let value: &str = rows[0].get(3);
+    println!("help");
+    println!("{:?}", value);
+
+    Ok(())
 }

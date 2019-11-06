@@ -44,6 +44,18 @@ impl TaskItem {
         NEXT_ID = highest;
     }
 
+    pub fn new_by_id(id: u32, start: NaiveDate, title: String, note: String, rep: Repetition) -> TaskItem {
+        TaskItem {
+            id,
+            start,
+            repetition: rep,
+            title,
+            note,
+            finished: false,
+            completed: vec![],
+        }
+    }
+
     pub unsafe fn from_raw(raw: RawTaskItem) -> Option<TaskItem> {
         let start = cal::get_start(raw.start)?;
         let task = TaskItem::new(start, raw.title, raw.note, raw.repetition);
