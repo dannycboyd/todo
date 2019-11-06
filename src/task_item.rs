@@ -1,4 +1,4 @@
-// auto-generated: "lalrpop 0.16.3"
+// auto-generated: "lalrpop 0.17.2"
 // sha256: 1e851bccd08dec7a4d72c9e7bf27cadb959a3d8be6e985e9f12145b90912d3
 use std::str::FromStr;
 use crate::task::{RawTaskItem, Mods};
@@ -10531,7 +10531,7 @@ mod __intern_token {
     #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
     pub struct Token<'input>(pub usize, pub &'input str);
     impl<'a> __fmt::Display for Token<'a> {
-        fn fmt(&self, formatter: &mut __fmt::Formatter) -> Result<(), __fmt::Error> {
+        fn fmt<'f>(&self, formatter: &mut __fmt::Formatter<'f>) -> Result<(), __fmt::Error> {
             __fmt::Display::fmt(self.1, formatter)
         }
     }
@@ -10623,8 +10623,7 @@ mod __intern_token {
         type Item = Result<(usize, Token<'input>, usize), __lalrpop_util::ParseError<usize,Token<'input>,&'static str>>;
 
         fn next(&mut self) -> Option<Self::Item> {
-            #[allow(deprecated)]
-            let __text = self.text.trim_left();
+            let __text = self.text.trim_start();
             let __whitespace = self.text.len() - __text.len();
             let __start_offset = self.consumed + __whitespace;
             if __text.is_empty() {

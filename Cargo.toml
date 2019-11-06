@@ -6,7 +6,7 @@ edition = "2018"
 build = "build.rs"
 
 [build-dependencies]
-lalrpop = "0.16.3"
+lalrpop = "0.17.2"
 
 [dependencies]
 #hyper = "0.12"
@@ -18,7 +18,6 @@ lalrpop-util = "0.16.3"
 regex = "0.2.1"
 terminal_size = "0.1.8"
 
-tokio-postgres = "0.5.0-alpha.1"
-postgres = { version = "0.15", features = ["with-chrono"]}
+tokio-postgres = { version = "0.5.0-alpha.1", features = ["with-chrono-0_4"] }
 futures-preview = "0.3.0-alpha.19"
 tokio = "0.2.0-alpha.6"

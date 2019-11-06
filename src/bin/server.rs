@@ -1,7 +1,6 @@
 extern crate chrono;
 extern crate to_do;
 use to_do::parser_cmd::Cmd;
-use to_do::task_item;
 use to_do::task::TaskItem;
 use chrono::NaiveDate;
 use to_do::cal::Repetition;
@@ -18,13 +17,13 @@ use tokio_postgres::{NoTls, Error, Row};
 // type BoxFut = Box<dyn Future<Item=Response<Body>, Error=hyper::Error> + Send>;
 
 fn fromRow(row: Row) -> TaskItem {
-    let id: u32 = row.get(0);
+    let id: i32 = row.get(0);
     let date: NaiveDate = row.get("start");
     let rep: &str = row.get("repeats");
     let title: &str = row.get("title");
     let note: &str = row.get("note");
     let finished: bool = row.get("finished");
-    TaskItem::new_by_id(id, date, title.to_string(), note.to_string(), Repetition::Monthly)
+    TaskItem::new_by_id(id as u32, date, title.to_string(), note.to_string(), Repetition::Daily)
 }
 
 #[tokio::main]
@@ -45,9 +44,11 @@ async fn main() -> Result<(), Error> {
         .query(&stmt, &[])
         .await?;
 
-    let value: &str = rows[0].get(3);
+    for row in rows {
+        println!("{:?}", fromRow(row));
+    }
+
     println!("help");
-    println!("{:?}", value);
 
     Ok(())
 }

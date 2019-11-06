@@ -6,7 +6,7 @@ pub mod task;
 pub const DEFAULT_FILE: &str = "./caldata.json";
 // #[macro_use] extern crate lalrpop_util;
 pub mod task_item;
-use lalrpop_util::ParseError;
+// use lalrpop_util::ParseError;
 
 pub enum TDError {
     IOError(String),

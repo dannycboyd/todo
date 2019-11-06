@@ -86,10 +86,10 @@ fn get_prev_sunday(date: NaiveDate) -> Option<NaiveDate> {
     }
 }
 
-fn month_len(date: &NaiveDate) -> Option<i64> {
-    next_month(date)
-        .map(|end| end.signed_duration_since(NaiveDate::from_ymd(date.year(), date.month(), 1)).num_days())
-}
+// fn month_len(date: &NaiveDate) -> Option<i64> {
+//     next_month(date)
+//         .map(|end| end.signed_duration_since(NaiveDate::from_ymd(date.year(), date.month(), 1)).num_days())
+// }
 
 fn next_month(date: &NaiveDate) -> Option<NaiveDate> {
     let mut year = date.year();

@@ -41,7 +41,7 @@ impl Cmd {
         }
     }
 
-    fn load(&mut self, url: &str) -> Result<usize, Box<error::Error>> {
+    fn load(&mut self, url: &str) -> Result<usize, Box<dyn error::Error>> {
         let file = fs::read_to_string(url)?;
         self.storage = serde_json::from_str(&file)?;
         let len = self.storage.len();
