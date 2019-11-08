@@ -56,8 +56,7 @@ impl Cmd {
     pub fn save(&self, url: &str) -> Result<(), TDError> {
         if self.storage.len() > 0 {
             let mut file = File::create(url)?;
-            let contents = serde_json::to_string(&self.storage)
-                .or_else(|_e| { Err(TDError::SerializeError) })?; // 3 - couldn't serialize output: if this happens, serde is broken
+            let contents = serde_json::to_string(&self.storage)?;
             write!(file, "{}", contents)?;
             Ok(())
         } else {
