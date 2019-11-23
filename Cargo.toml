@@ -9,7 +9,7 @@ build = "build.rs"
 lalrpop = "0.17.2"
 
 [dependencies]
-hyper = "0.13.0-alpha.2"
+hyper = { version = "0.13.0-alpha.2", features = ["unstable-stream"] }
 chrono = { version = "0.4", features = ["serde"] }
 ansi_term = "0.9"
 serde = { version = "1.0", features = ["derive"] }
@@ -19,5 +19,5 @@ regex = "0.2.1"
 terminal_size = "0.1.8"
 
 tokio-postgres = { version = "0.5.0-alpha.1", features = ["with-chrono-0_4"] }
-futures-preview = "0.3.0-alpha.19"
+futures-preview = { version = "0.3.0-alpha.19", features = ["io-compat"] }
 tokio = "0.2.0-alpha.6"

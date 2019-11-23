@@ -5,6 +5,7 @@ use chrono::NaiveDate;
 use crate::cal::{Repetition};
 use crate::cal;
 use std::fmt;
+use std::str::FromStr;
 // use crate::cal::calendar;
 static mut NEXT_ID: u32 = 1;
 
@@ -34,8 +35,8 @@ impl TaskItem {
             id: NEXT_ID,
             start,
             repetition: rep,
-            title: title,
-            note: note,
+            title,
+            note,
             finished: false,
             completed: vec![],
         }
@@ -44,14 +45,14 @@ impl TaskItem {
         NEXT_ID = highest;
     }
 
-    pub fn new_by_id(id: u32, start: NaiveDate, title: String, note: String, rep: Repetition) -> TaskItem {
+    pub fn new_by_id(id: u32, start: NaiveDate, title: String, note: String, rep: Repetition, finished: bool) -> TaskItem {
         TaskItem {
             id,
             start,
             repetition: rep,
             title,
             note,
-            finished: false,
+            finished,
             completed: vec![],
         }
     }

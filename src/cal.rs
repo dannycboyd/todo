@@ -5,12 +5,14 @@ use chrono::NaiveDate;
 use chrono::Local; // Utc, Local
 use chrono::Datelike;
 use std::fmt;
+use std::str::FromStr;
 
 
 use ansi_term::Style;
 use ansi_term::Color::{Yellow};
 
 use crate::task::TaskItem;
+use super::TDError;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Repetition {
@@ -20,6 +22,21 @@ pub enum Repetition {
     Monthly,
     Yearly,
     // Custom(MultiDays)
+}
+
+impl FromStr for Repetition {
+    type Err = TDError;
+
+    fn from_str(rep: &str) -> Result<Self, TDError> {
+        Ok(match rep.to_lowercase().as_ref() {
+            "n" | "never" => Repetition::Never,
+            "y" | "yearly" => Repetition::Yearly,
+            "w" | "weekly" => Repetition::Weekly,
+            "m" | "monthly" => Repetition::Monthly,
+            "e" => Err(TDError::ParseError("An error for testing".to_string()))?,
+            "d" | "daily" | &_ => Repetition::Daily,
+        })
+    }
 }
 
 pub enum Occurrence {
@@ -177,12 +194,12 @@ pub fn print_month(date: NaiveDate, tasks: &Vec<TaskItem>) {
             print!("{}", day_justified);
         };
         if first == 0 {
-            print!("\n");
+            println!();
         } else {
             print!(" ");
         }
     }
-    println!("")
+    println!()
 }
 
 pub fn print_week(date: NaiveDate, tasks: &Vec<TaskItem>) {
@@ -217,7 +234,7 @@ pub fn print_week(date: NaiveDate, tasks: &Vec<TaskItem>) {
                         let day_justified = if occurs { Yellow.bold().paint(day_justified).to_string() } else { String::from(day_justified) };
                         print!("{}", day_justified);
                     }
-                    println!("");
+                    println!();
                     let mut day: u32 = 0;
                     for (i, t) in happening.iter() {
                         if *i == day {

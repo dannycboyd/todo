@@ -1,6 +1,5 @@
 extern crate chrono;
 extern crate to_do;
-use to_do::parser_cmd::Cmd;
 use to_do::task::TaskItem;
 use chrono::NaiveDate;
 use to_do::cal::Repetition;
@@ -9,23 +8,22 @@ use to_do::TDError;
 extern crate hyper;
 use hyper::{Body, Request, Response, Server};
 use hyper::service::{service_fn, make_service_fn};
-use hyper::{Method, StatusCode};
 
-use futures::{future, FutureExt};
-use hyper::rt::Future;
+use futures::{FutureExt};
+use futures::stream::TryStreamExt;
+
 use tokio_postgres::{NoTls, Row};
 use tokio_postgres;
 
-// type BoxFut = Box<dyn Future<Item=Response<Body>, Error=hyper::Error> + Send>;
-
-fn from_row(row: Row) -> TaskItem {
+fn from_row(row: Row) -> Result<TaskItem, TDError> {
     let id: i32 = row.get(0);
     let date: NaiveDate = row.get("start");
     let rep: &str = row.get("repeats");
+    let rep = rep.parse::<Repetition>()?;
     let title: &str = row.get("title");
     let note: &str = row.get("note");
     let finished: bool = row.get("finished");
-    TaskItem::new_by_id(id as u32, date, title.to_string(), note.to_string(), Repetition::Daily)
+    Ok(TaskItem::new_by_id(id as u32, date, title.to_string(), note.to_string(), rep, finished))
 }
 
 // you can wrap it in a function that uses your own error type, and then map_err()
@@ -60,11 +58,36 @@ async fn myecho(req: Request<Body>) -> Result<Response<Body>, TDError> {
 
             let mut resp = String::new();
             for row in rows {
-                resp.push_str(format!("{}", from_row(row)).as_ref());
-                resp.push('\n');
+                match from_row(row) {
+                    Ok(item) => {
+                        resp.push_str(format!("{}", item).as_ref());
+                        resp.push('\n');
+                    },
+                    Err(e) => {
+                        eprintln!("An error occurred loading from DB: {}", e);
+                    }
+                }
                 // println!("{:?}", from_row(row));
             }
             Ok(Response::new(Body::from(resp)))
+
+        },
+        (&hyper::Method::POST, "/test") => {
+            let response = Response::new(Body::from("hi"));
+            let entire_body = req.into_body().try_concat().await?;
+
+            let body_str = String::from_utf8(entire_body.to_vec())?;
+            let mut data: serde_json::Value = serde_json::from_str(&body_str)?;
+            let d: Result<TaskItem, serde_json::error::Error> = serde_json::from_str(&body_str);
+            match (d) {
+                Ok(v) => println!("{}", v),
+                Err(e) => eprintln!("{}", e), // this should return in the body with an error code :)
+            }
+            // data["test"] = serde_json::Value::from("test_value");
+
+            // println!("{}", data);
+
+            Ok(response)
 
         },
         _ => {
@@ -80,7 +103,6 @@ async fn main() -> Result<(), hyper::Error> {
 
     let service = make_service_fn(move |_| {
         async {
-
             Ok::<_, hyper::Error>(service_fn(myecho))
         }
     });

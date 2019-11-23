@@ -1,4 +1,4 @@
-// command line crate
+// command line crate. Works on local storage .json. I want a similar API sort of thing like this but for the server.
 use std::io::{Write};
 
 use serde_json;
@@ -57,6 +57,7 @@ impl Cmd {
         if self.storage.len() > 0 {
             let mut file = File::create(url)?;
             let contents = serde_json::to_string(&self.storage)?;
+                // .or_else(|_e| { Err(TDError::SerializeError) })?; // 3 - couldn't serialize output: if this happens, serde is broken
             write!(file, "{}", contents)?;
             Ok(())
         } else {
