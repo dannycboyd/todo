@@ -7,11 +7,11 @@ use crate::cal;
 use std::fmt;
 use std::str::FromStr;
 // use crate::cal::calendar;
-static mut NEXT_ID: u32 = 1;
+static mut NEXT_ID: i32 = 1;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TaskItem {
-    id: u32,
+    id: i32,
     pub start: NaiveDate,
     pub repetition: Repetition,
     pub title: String,
@@ -41,11 +41,11 @@ impl TaskItem {
             completed: vec![],
         }
     }
-    pub unsafe fn set_id_start(highest: u32) {
+    pub unsafe fn set_id_start(highest: i32) {
         NEXT_ID = highest;
     }
 
-    pub fn new_by_id(id: u32, start: NaiveDate, title: String, note: String, rep: Repetition, finished: bool) -> TaskItem {
+    pub fn new_by_id(id: i32, start: NaiveDate, title: String, note: String, rep: Repetition, finished: bool) -> TaskItem {
         TaskItem {
             id,
             start,
@@ -77,8 +77,12 @@ impl TaskItem {
         }
     }
 
-    pub fn get_id(&self) -> u32 {
+    pub fn get_id(&self) -> i32 {
         self.id
+    }
+
+    pub fn set_id(&mut self, new_id: i32) {
+        self.id = new_id;
     }
 
     pub fn mark_completed(&mut self, day: NaiveDate) {

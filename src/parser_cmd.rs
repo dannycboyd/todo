@@ -76,11 +76,11 @@ impl Cmd {
         }
     }
 
-    fn find_task_by_id(&mut self, id: u32) -> Option<&mut TaskItem> {
+    fn find_task_by_id(&mut self, id: i32) -> Option<&mut TaskItem> {
         self.storage.iter_mut().find(|task| task.get_id() == id)
     }
 
-    pub fn modify(&mut self, id: u32, cmds: Vec<Mods>) {
+    pub fn modify(&mut self, id: i32, cmds: Vec<Mods>) {
         match self.find_task_by_id(id) {
             Some(task) => {
                 task.apply_modifications(cmds);
@@ -89,7 +89,7 @@ impl Cmd {
         }
     }
 
-    pub fn do_task(&mut self, id: u32) {
+    pub fn do_task(&mut self, id: i32) {
         match self.find_task_by_id(id) {
             Some(task) => {
                 println!("Mark done today");
@@ -100,7 +100,7 @@ impl Cmd {
         }
     }
 
-    pub fn finish_task(&mut self, id: u32) {
+    pub fn finish_task(&mut self, id: i32) {
         match self.find_task_by_id(id) {
             Some(task) => {
                 println!("Mark finished today");

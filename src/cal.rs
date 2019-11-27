@@ -38,6 +38,18 @@ impl FromStr for Repetition {
         })
     }
 }
+    
+impl  Repetition {
+    pub fn to_sql_string(&self) -> String {
+        String::from_str(match self {
+            Repetition::Never => "n",
+            Repetition::Daily => "d",
+            Repetition::Weekly => "w",
+            Repetition::Monthly => "m",
+            Repetition::Yearly => "y"
+        }).unwrap()
+    }
+}
 
 pub enum Occurrence {
     Todo,
@@ -59,36 +71,6 @@ impl fmt::Display for Repetition {
     }
 }
 
-// #[derive(Debug)]
-// pub struct MultiDays {
-//     sun: bool,
-//     mon: bool,
-//     tue: bool,
-//     wed: bool,
-//     thur: bool,
-//     fri: bool,
-//     sat: bool,
-// }
-
-// pub fn show_days_in_dur(tasks: Vec<&TaskItem>, start: NaiveDate, dur: u32) -> Vec<u32> {
-//     let mut days = vec![];
-//     for task in tasks.iter() {
-//         println!("{:?}", task);
-//         for i in 0..dur {
-//             match start.checked_add_signed(Duration::days(i as i64)) {
-//                 Some(check) => {
-//                     if task.occurs_on_day(check) { // this call zigzags, but i think it makes sense?
-//                         days.push(i);
-//                     }
-//                 },
-//                 None => println!("Something went wrong trying to add {} days to {:?}", i, &start),
-//             };
-//         };
-//     };
-//     println!("{:?}", days);
-//     days
-// }
-
 fn print_weekdays() {
     println!("Su Mo Tu We Th Fr Sa");
 }
@@ -102,11 +84,6 @@ fn get_prev_sunday(date: NaiveDate) -> Option<NaiveDate> {
         NaiveDate::from_num_days_from_ce_opt(days)
     }
 }
-
-// fn month_len(date: &NaiveDate) -> Option<i64> {
-//     next_month(date)
-//         .map(|end| end.signed_duration_since(NaiveDate::from_ymd(date.year(), date.month(), 1)).num_days())
-// }
 
 fn next_month(date: &NaiveDate) -> Option<NaiveDate> {
     let mut year = date.year();
