@@ -1,9 +1,5 @@
-// command line crate. Works on local storage .json. I want a similar API sort of thing like this but for the server.
+// CLI Tool version of calendar. Works with direct 
 use std::io::{Write};
-
-// use serde_json;
-// use std::fs::File;
-// use std::fs;
 use std::error;
 
 use futures::{FutureExt};
