@@ -12,12 +12,12 @@ use super::DEFAULT_FILE;
 
 #[derive(Debug)]
 pub enum Args {
-    Do(u32),
-    Finish(u32),
+    Do(i32),
+    Finish(i32),
     Help,
     List,
     MakeRaw(RawTaskItem),
-    Mods(u32, Vec<Mods>),
+    Mods(i32, Vec<Mods>),
     Save,
     Show(cal::Repetition, Option<Vec<u32>>),
     Quit,

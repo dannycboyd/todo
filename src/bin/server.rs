@@ -93,7 +93,7 @@ async fn myecho(req: Request<Body>) -> Result<Response<Body>, TDError> {
             eprintln!("connection error: {}", e);
         }
     });
-
+    // println!("{}", connection);
     tokio::spawn(connection);
 
     let method = req.method();

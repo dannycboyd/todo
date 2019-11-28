@@ -1,14 +1,13 @@
 use std::io;
-
 extern crate chrono;
 
 extern crate to_do;
 use to_do::parser_cmd::{Cmd, Args};
+
+use to_do::async_direct_cmd::{AsyncCmd};
 use to_do::task_item;
-use to_do::DEFAULT_FILE;
 
 use to_do::TDError;
-use to_do::TDError::*;
 
 type CmdResult<T> = std::result::Result<T, TDError>;
 
@@ -21,42 +20,35 @@ fn parse(parser: &task_item::CmdParser, cmd_raw: &str) -> CmdResult<Args> {
     parser.parse(cmd_raw)
         .or_else(|err| {
             let foo = format!("{}", err);
-            Err(ParseError(foo))
+            Err(TDError::ParseError(foo))
         })
 }
 
-fn run() {
+async fn run2() -> Result<(), TDError> {
     let parser = task_item::CmdParser::new();
-    let mut cmdline = Cmd::new();
+    let cmdline = AsyncCmd::new().await?;
+
     loop {
         let mut cmd_raw = String::new();
-        let something: CmdResult<()> = read(&mut cmd_raw)
-            .and_then(|_len| { parse(&parser, &cmd_raw) })
-            .and_then(|cmd| {
-                 match cmd {
-                    Args::MakeRaw(raw) => cmdline.make_raw(raw),
-                    Args::Do(id) => cmdline.do_task(id),
-                    Args::Finish(id) => cmdline.finish_task(id),
-                    Args::Mods(id, cmds) => cmdline.modify(id, cmds),
-                    Args::Show(kind, when) => cmdline.show(kind, when),
-                    Args::List => cmdline.list_all(),
-                    Args::Save => return cmdline.save(DEFAULT_FILE),
-                    Args::Help => (),
-                    Args::Quit => return Err(Quit),
-                };
-                Ok(())
-            });
-        match something {
-            Ok(_) => (),
-            Err(Quit) => break,
-            Err(ParseError(e)) => eprintln!("Parser error: {}", e),
-            Err(IOError(e)) => eprintln!("IO Error: {}", e),
-            Err(_) => eprintln!("An error occurred"),
-        }
+        let _bytes_read = read(&mut cmd_raw)?;
+        let cmd = parse(&parser, &cmd_raw)?;
+
+        let cmd_result = match cmd {
+            Args::List => cmdline.list_all().await,
+            Args::Quit => break,
+            _ => Ok(())
+        };
+
+        match cmd_result {
+            Err(e) => println!("{}", e),
+            _ => ()
+        };
     }
+    Ok(())
 }
 
-fn main () {
+#[tokio::main]
+async fn main () -> Result<(), TDError> {
     let date_p = task_item::DateParser::new();
     let rep_p = task_item::RepeatsParser::new();
     let per_p = task_item::PeriodParser::new();
@@ -73,5 +65,6 @@ fn main () {
     println!("{:?}", per_p.parse("m 04-20"));
     println!("{:?}", per_p.parse("d"));
 
-    run();
+    run2().await?;
+    Ok(())
 }

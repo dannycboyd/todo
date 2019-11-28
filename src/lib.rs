@@ -3,14 +3,20 @@
 
 pub mod cal;
 pub mod parser_cmd;
+pub mod async_direct_cmd;
 pub mod task;
 
 pub const DEFAULT_FILE: &str = "./caldata.json";
 // #[macro_use] extern crate lalrpop_util;
 pub mod task_item;
+use task::TaskItem;
 // use lalrpop_util::ParseError;
 use serde_json;
+use chrono::NaiveDate;
+use cal::Repetition;
 use url;
+
+use tokio_postgres::Row;
 
 #[derive(Debug)]
 pub enum TDError {
@@ -77,7 +83,7 @@ impl From<std::string::FromUtf8Error> for TDError {
 }
 
 impl From<std::option::NoneError> for TDError {
-  fn from (error: std::option::NoneError) -> Self {
+  fn from (_error: std::option::NoneError) -> Self {
     TDError::NoneError
   }
 }
@@ -94,4 +100,18 @@ impl From<std::num::ParseIntError> for TDError {
     let value = format!("{}", error);
     TDError::ParseError(value)
   }
+}
+
+fn from_row(row: Row) -> Result<TaskItem, TDError> {
+  let id: i32 = row.try_get(0)?;
+  let date: NaiveDate = row.try_get("start")?;
+  let rep: &str = row.try_get("repeats")?;
+  let rep = rep.parse::<Repetition>()?;
+  let title: &str = row.try_get("title")?;
+  let note: &str = match row.try_get("note") {
+      Ok(n) => n,
+      Err(_e) => ""
+  };
+  let finished: bool = row.try_get("finished")?;
+  Ok(TaskItem::new_by_id(id, date, title.to_string(), note.to_string(), rep, finished))
 }

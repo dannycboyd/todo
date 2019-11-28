@@ -7,13 +7,13 @@ use crate::parser_cmd::{Args};
 grammar;
 
 pub Date: Vec<u32> = {
-    <day:Num> => vec![day],
-    <month:Num> "-" <day:Num> => vec![month, day],
-    <month:Num> "-" <day:Num> "-" <year:Year> => vec![month, day, year],
+    <day:Num> => vec![day as u32],
+    <month:Num> "-" <day:Num> => vec![month as u32, day as u32],
+    <month:Num> "-" <day:Num> "-" <year:Year> => vec![month as u32, day as u32, year],
 }
 
-Num: u32 = {
-    r"[0-9]{1,2}" => u32::from_str(<>).unwrap()
+Num: i32 = {
+    r"[0-9]{1,2}" => i32::from_str(<>).unwrap()
 }
 
 Year: u32 = {

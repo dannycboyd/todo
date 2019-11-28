@@ -1,5 +1,5 @@
 // auto-generated: "lalrpop 0.17.2"
-// sha256: 1e851bccd08dec7a4d72c9e7bf27cadb959a3d8be6e985e9f12145b90912d3
+// sha256: ee9eecf54d8772a15d45cb301d2dd5ec1e3fea4b37e9ddae3a72481ce106e15
 use std::str::FromStr;
 use crate::task::{RawTaskItem, Mods};
 use crate::cal::Repetition;
@@ -31,13 +31,14 @@ mod __parse__Cmd {
         Variant3(Vec<u32>),
         Variant4(::std::option::Option<Vec<u32>>),
         Variant5(Vec<Mods>),
-        Variant6(u32),
+        Variant6(i32),
         Variant7((Repetition, Option<Vec<u32>>)),
         Variant8(RawTaskItem),
         Variant9(Repetition),
         Variant10((Vec<u32>, String, String, Repetition)),
         Variant11(String),
         Variant12(Vec<String>),
+        Variant13(u32),
     }
     const __ACTION: &'static [i8] = &[
         // State 0
@@ -1306,10 +1307,21 @@ mod __parse__Cmd {
       'input,
     >(
         __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, u32, usize)
+    ) -> (usize, i32, usize)
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant6(__v), __r) => (__l, __v, __r),
+            _ => panic!("symbol type mismatch")
+        }
+    }
+    fn __pop_Variant13<
+      'input,
+    >(
+        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
+    ) -> (usize, u32, usize)
+     {
+        match __symbols.pop().unwrap() {
+            (__l, __Symbol::Variant13(__v), __r) => (__l, __v, __r),
             _ => panic!("symbol type mismatch")
         }
     }
@@ -1582,7 +1594,7 @@ mod __parse__Cmd {
     ) -> (usize, usize)
     {
         // Date = Num, "-", Num, "-", Year => ActionFn(7);
-        let __sym4 = __pop_Variant6(__symbols);
+        let __sym4 = __pop_Variant13(__symbols);
         let __sym3 = __pop_Variant0(__symbols);
         let __sym2 = __pop_Variant6(__symbols);
         let __sym1 = __pop_Variant0(__symbols);
@@ -2237,7 +2249,7 @@ mod __parse__Cmd {
         let __start = __sym0.0.clone();
         let __end = __sym0.2.clone();
         let __nt = super::__action9::<>(input, __sym0);
-        __symbols.push((__start, __Symbol::Variant6(__nt), __end));
+        __symbols.push((__start, __Symbol::Variant13(__nt), __end));
         (1, 13)
     }
     pub(crate) fn __reduce47<
@@ -2341,13 +2353,14 @@ mod __parse__Date {
         Variant3(Vec<u32>),
         Variant4(::std::option::Option<Vec<u32>>),
         Variant5(Vec<Mods>),
-        Variant6(u32),
+        Variant6(i32),
         Variant7((Repetition, Option<Vec<u32>>)),
         Variant8(RawTaskItem),
         Variant9(Repetition),
         Variant10((Vec<u32>, String, String, Repetition)),
         Variant11(String),
         Variant12(Vec<String>),
+        Variant13(u32),
     }
     const __ACTION: &'static [i8] = &[
         // State 0
@@ -3334,10 +3347,21 @@ mod __parse__Date {
       'input,
     >(
         __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, u32, usize)
+    ) -> (usize, i32, usize)
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant6(__v), __r) => (__l, __v, __r),
+            _ => panic!("symbol type mismatch")
+        }
+    }
+    fn __pop_Variant13<
+      'input,
+    >(
+        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
+    ) -> (usize, u32, usize)
+     {
+        match __symbols.pop().unwrap() {
+            (__l, __Symbol::Variant13(__v), __r) => (__l, __v, __r),
             _ => panic!("symbol type mismatch")
         }
     }
@@ -3610,7 +3634,7 @@ mod __parse__Date {
     ) -> (usize, usize)
     {
         // Date = Num, "-", Num, "-", Year => ActionFn(7);
-        let __sym4 = __pop_Variant6(__symbols);
+        let __sym4 = __pop_Variant13(__symbols);
         let __sym3 = __pop_Variant0(__symbols);
         let __sym2 = __pop_Variant6(__symbols);
         let __sym1 = __pop_Variant0(__symbols);
@@ -4265,7 +4289,7 @@ mod __parse__Date {
         let __start = __sym0.0.clone();
         let __end = __sym0.2.clone();
         let __nt = super::__action9::<>(input, __sym0);
-        __symbols.push((__start, __Symbol::Variant6(__nt), __end));
+        __symbols.push((__start, __Symbol::Variant13(__nt), __end));
         (1, 13)
     }
     pub(crate) fn __reduce46<
@@ -4369,13 +4393,14 @@ mod __parse__Period {
         Variant3(Vec<u32>),
         Variant4(::std::option::Option<Vec<u32>>),
         Variant5(Vec<Mods>),
-        Variant6(u32),
+        Variant6(i32),
         Variant7((Repetition, Option<Vec<u32>>)),
         Variant8(RawTaskItem),
         Variant9(Repetition),
         Variant10((Vec<u32>, String, String, Repetition)),
         Variant11(String),
         Variant12(Vec<String>),
+        Variant13(u32),
     }
     const __ACTION: &'static [i8] = &[
         // State 0
@@ -5434,10 +5459,21 @@ mod __parse__Period {
       'input,
     >(
         __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, u32, usize)
+    ) -> (usize, i32, usize)
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant6(__v), __r) => (__l, __v, __r),
+            _ => panic!("symbol type mismatch")
+        }
+    }
+    fn __pop_Variant13<
+      'input,
+    >(
+        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
+    ) -> (usize, u32, usize)
+     {
+        match __symbols.pop().unwrap() {
+            (__l, __Symbol::Variant13(__v), __r) => (__l, __v, __r),
             _ => panic!("symbol type mismatch")
         }
     }
@@ -5710,7 +5746,7 @@ mod __parse__Period {
     ) -> (usize, usize)
     {
         // Date = Num, "-", Num, "-", Year => ActionFn(7);
-        let __sym4 = __pop_Variant6(__symbols);
+        let __sym4 = __pop_Variant13(__symbols);
         let __sym3 = __pop_Variant0(__symbols);
         let __sym2 = __pop_Variant6(__symbols);
         let __sym1 = __pop_Variant0(__symbols);
@@ -6365,7 +6401,7 @@ mod __parse__Period {
         let __start = __sym0.0.clone();
         let __end = __sym0.2.clone();
         let __nt = super::__action9::<>(input, __sym0);
-        __symbols.push((__start, __Symbol::Variant6(__nt), __end));
+        __symbols.push((__start, __Symbol::Variant13(__nt), __end));
         (1, 13)
     }
     pub(crate) fn __reduce46<
@@ -6469,13 +6505,14 @@ mod __parse__Repeats {
         Variant3(Vec<u32>),
         Variant4(::std::option::Option<Vec<u32>>),
         Variant5(Vec<Mods>),
-        Variant6(u32),
+        Variant6(i32),
         Variant7((Repetition, Option<Vec<u32>>)),
         Variant8(RawTaskItem),
         Variant9(Repetition),
         Variant10((Vec<u32>, String, String, Repetition)),
         Variant11(String),
         Variant12(Vec<String>),
+        Variant13(u32),
     }
     const __ACTION: &'static [i8] = &[
         // State 0
@@ -7480,10 +7517,21 @@ mod __parse__Repeats {
       'input,
     >(
         __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, u32, usize)
+    ) -> (usize, i32, usize)
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant6(__v), __r) => (__l, __v, __r),
+            _ => panic!("symbol type mismatch")
+        }
+    }
+    fn __pop_Variant13<
+      'input,
+    >(
+        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
+    ) -> (usize, u32, usize)
+     {
+        match __symbols.pop().unwrap() {
+            (__l, __Symbol::Variant13(__v), __r) => (__l, __v, __r),
             _ => panic!("symbol type mismatch")
         }
     }
@@ -7756,7 +7804,7 @@ mod __parse__Repeats {
     ) -> (usize, usize)
     {
         // Date = Num, "-", Num, "-", Year => ActionFn(7);
-        let __sym4 = __pop_Variant6(__symbols);
+        let __sym4 = __pop_Variant13(__symbols);
         let __sym3 = __pop_Variant0(__symbols);
         let __sym2 = __pop_Variant6(__symbols);
         let __sym1 = __pop_Variant0(__symbols);
@@ -8411,7 +8459,7 @@ mod __parse__Repeats {
         let __start = __sym0.0.clone();
         let __end = __sym0.2.clone();
         let __nt = super::__action9::<>(input, __sym0);
-        __symbols.push((__start, __Symbol::Variant6(__nt), __end));
+        __symbols.push((__start, __Symbol::Variant13(__nt), __end));
         (1, 13)
     }
     pub(crate) fn __reduce46<
@@ -8515,13 +8563,14 @@ mod __parse__Words {
         Variant3(Vec<u32>),
         Variant4(::std::option::Option<Vec<u32>>),
         Variant5(Vec<Mods>),
-        Variant6(u32),
+        Variant6(i32),
         Variant7((Repetition, Option<Vec<u32>>)),
         Variant8(RawTaskItem),
         Variant9(Repetition),
         Variant10((Vec<u32>, String, String, Repetition)),
         Variant11(String),
         Variant12(Vec<String>),
+        Variant13(u32),
     }
     const __ACTION: &'static [i8] = &[
         // State 0
@@ -9502,10 +9551,21 @@ mod __parse__Words {
       'input,
     >(
         __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, u32, usize)
+    ) -> (usize, i32, usize)
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant6(__v), __r) => (__l, __v, __r),
+            _ => panic!("symbol type mismatch")
+        }
+    }
+    fn __pop_Variant13<
+      'input,
+    >(
+        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
+    ) -> (usize, u32, usize)
+     {
+        match __symbols.pop().unwrap() {
+            (__l, __Symbol::Variant13(__v), __r) => (__l, __v, __r),
             _ => panic!("symbol type mismatch")
         }
     }
@@ -9778,7 +9838,7 @@ mod __parse__Words {
     ) -> (usize, usize)
     {
         // Date = Num, "-", Num, "-", Year => ActionFn(7);
-        let __sym4 = __pop_Variant6(__symbols);
+        let __sym4 = __pop_Variant13(__symbols);
         let __sym3 = __pop_Variant0(__symbols);
         let __sym2 = __pop_Variant6(__symbols);
         let __sym1 = __pop_Variant0(__symbols);
@@ -10433,7 +10493,7 @@ mod __parse__Words {
         let __start = __sym0.0.clone();
         let __end = __sym0.2.clone();
         let __nt = super::__action9::<>(input, __sym0);
-        __symbols.push((__start, __Symbol::Variant6(__nt), __end));
+        __symbols.push((__start, __Symbol::Variant13(__nt), __end));
         (1, 13)
     }
     pub(crate) fn __reduce46<
@@ -10722,10 +10782,10 @@ fn __action5<
     'input,
 >(
     input: &'input str,
-    (_, day, _): (usize, u32, usize),
+    (_, day, _): (usize, i32, usize),
 ) -> Vec<u32>
 {
-    vec![day]
+    vec![day as u32]
 }
 
 #[allow(unused_variables)]
@@ -10733,12 +10793,12 @@ fn __action6<
     'input,
 >(
     input: &'input str,
-    (_, month, _): (usize, u32, usize),
+    (_, month, _): (usize, i32, usize),
     (_, _, _): (usize, &'input str, usize),
-    (_, day, _): (usize, u32, usize),
+    (_, day, _): (usize, i32, usize),
 ) -> Vec<u32>
 {
-    vec![month, day]
+    vec![month as u32, day as u32]
 }
 
 #[allow(unused_variables)]
@@ -10746,14 +10806,14 @@ fn __action7<
     'input,
 >(
     input: &'input str,
-    (_, month, _): (usize, u32, usize),
+    (_, month, _): (usize, i32, usize),
     (_, _, _): (usize, &'input str, usize),
-    (_, day, _): (usize, u32, usize),
+    (_, day, _): (usize, i32, usize),
     (_, _, _): (usize, &'input str, usize),
     (_, year, _): (usize, u32, usize),
 ) -> Vec<u32>
 {
-    vec![month, day, year]
+    vec![month as u32, day as u32, year]
 }
 
 #[allow(unused_variables)]
@@ -10762,9 +10822,9 @@ fn __action8<
 >(
     input: &'input str,
     (_, __0, _): (usize, &'input str, usize),
-) -> u32
+) -> i32
 {
-    u32::from_str(__0).unwrap()
+    i32::from_str(__0).unwrap()
 }
 
 #[allow(unused_variables)]
@@ -11134,7 +11194,7 @@ fn __action39<
 >(
     input: &'input str,
     (_, _, _): (usize, &'input str, usize),
-    (_, id, _): (usize, u32, usize),
+    (_, id, _): (usize, i32, usize),
     (_, modifs, _): (usize, Vec<Mods>, usize),
 ) -> (Args)
 {
@@ -11159,7 +11219,7 @@ fn __action41<
 >(
     input: &'input str,
     (_, _, _): (usize, &'input str, usize),
-    (_, id, _): (usize, u32, usize),
+    (_, id, _): (usize, i32, usize),
 ) -> (Args)
 {
     { Args::Do(id) }
@@ -11171,7 +11231,7 @@ fn __action42<
 >(
     input: &'input str,
     (_, _, _): (usize, &'input str, usize),
-    (_, id, _): (usize, u32, usize),
+    (_, id, _): (usize, i32, usize),
 ) -> (Args)
 {
     { Args::Finish(id) }
