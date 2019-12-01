@@ -110,7 +110,7 @@ pub fn task_on_day(task: &TaskItem, check: NaiveDate) -> bool {
         Repetition::Daily => start <= check,
         Repetition::Weekly => start <= check && start.weekday() == check.weekday(),
         Repetition::Monthly => start <= check && start.day() == check.day(),
-        _ => false
+        Repetition::Yearly => start <= check && start.day() == check.day() && start.month() == check.month(),
     }
 }
 

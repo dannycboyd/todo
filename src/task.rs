@@ -1,12 +1,9 @@
 extern crate chrono;
-// use chrono::prelude::*; // Utc, Local
 use serde::{Serialize, Deserialize};
 use chrono::NaiveDate;
 use crate::cal::{Repetition};
 use crate::cal;
 use std::fmt;
-use std::str::FromStr;
-// use crate::cal::calendar;
 static mut NEXT_ID: i32 = 1;
 
 #[derive(Serialize, Deserialize, Debug)]

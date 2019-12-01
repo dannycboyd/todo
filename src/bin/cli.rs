@@ -3,11 +3,8 @@ extern crate chrono;
 
 extern crate to_do;
 use to_do::parser_cmd::{Cmd, Args};
-
 use to_do::async_direct_cmd::{AsyncCmd};
-use to_do::task_item;
-
-use to_do::TDError;
+use to_do::{task_item, TDError, connection_info};
 
 type CmdResult<T> = std::result::Result<T, TDError>;
 
@@ -24,24 +21,28 @@ fn parse(parser: &task_item::CmdParser, cmd_raw: &str) -> CmdResult<Args> {
         })
 }
 
-async fn run2() -> Result<(), TDError> {
+async fn run() -> Result<(), TDError> {
+
+    let db_string = connection_info()?;
+    println!("{:?}", db_string);
+
     let parser = task_item::CmdParser::new();
-    let cmdline = AsyncCmd::new().await?;
+    let cmdline = AsyncCmd::new(&db_string).await?;
 
     loop {
         let mut cmd_raw = String::new();
         let _bytes_read = read(&mut cmd_raw)?;
-        let cmd = parse(&parser, &cmd_raw)?;
+        let cmd = parse(&parser, &cmd_raw);
 
         let cmd_result = match cmd {
-            Args::List => cmdline.list_all().await,
-            Args::Quit => break,
+            Ok(Args::List) => cmdline.list_all().await,
+            Ok(Args::Show(rep, when)) => cmdline.show(rep, when).await,
+            Ok(Args::Quit) => break,
+            Err(e) => {
+                println!("{}", e);
+                Ok(())
+            },
             _ => Ok(())
-        };
-
-        match cmd_result {
-            Err(e) => println!("{}", e),
-            _ => ()
         };
     }
     Ok(())
@@ -65,6 +66,6 @@ async fn main () -> Result<(), TDError> {
     println!("{:?}", per_p.parse("m 04-20"));
     println!("{:?}", per_p.parse("d"));
 
-    run2().await?;
+    run().await?;
     Ok(())
 }

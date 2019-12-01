@@ -5,21 +5,21 @@ extern crate to_do;
 use to_do::task::TaskItem;
 use chrono::NaiveDate;
 use to_do::cal::Repetition;
-use to_do::TDError;
+use to_do::{TDError, connection_info};
 
 extern crate hyper;
-use hyper::{Body, Request, Uri, Response, Server, StatusCode};
+use hyper::{Body, Request, Response, Server, StatusCode};
 use hyper::service::{service_fn, make_service_fn};
+use hyper::server::conn::AddrStream;
 
 use url::Url;
 
 use futures::{FutureExt};
 use futures::stream::TryStreamExt;
+// use futures::future::Future;
 
 use tokio_postgres::{NoTls, Row};
 use tokio_postgres;
-// use tokio_postgres::types::{FromSql, FromSqlOwned, IsNull, Kind, ToSql, Type, WrongType};
-// use std::fmt;
 
 fn from_row(row: Row) -> Result<TaskItem, TDError> {
     let id: i32 = row.try_get(0)?;
@@ -84,16 +84,16 @@ async fn delete_task(client: tokio_postgres::Client, uri: String) -> Response<Bo
 }
 
 // you can wrap it in a function that uses your own error type, and then map_err()
-async fn myecho(req: Request<Body>) -> Result<Response<Body>, TDError> {
+// in order to get the string in here, I think we need a function which returns |req| -> result<response<body>>, which we can call with the string. we don't need to call myecho, so it could concievably be turned into a closure ok
+async fn myecho(req: Request<Body>, conn_info: String) -> Result<Response<Body>, TDError> {
     let (client, connection) =
-        tokio_postgres::connect("host=localhost user=dannyboyd dbname=caldata", NoTls).await?;
+        tokio_postgres::connect(&conn_info, NoTls).await?;
 
     let connection = connection.map(|r| {
         if let Err(e) = r {
             eprintln!("connection error: {}", e);
         }
     });
-    // println!("{}", connection);
     tokio::spawn(connection);
 
     let method = req.method();
@@ -124,7 +124,6 @@ async fn myecho(req: Request<Body>) -> Result<Response<Body>, TDError> {
                         eprintln!("An error occurred loading from DB: {}", e);
                     }
                 }
-                // println!("{:?}", from_row(row));
             }
             Ok(Response::new(Body::from(resp)))
 
@@ -140,7 +139,7 @@ async fn myecho(req: Request<Body>) -> Result<Response<Body>, TDError> {
                         "INSERT into tasks (start, repeats, title, note, finished) VALUES ($1, $2, $3, $4, $5) RETURNING id"
                     ).await?;
 
-                    let r = client // i'd like to get the id off of the insert, but I'm not sure how at this point
+                    let r = client
                         .query(&stmt, &[&v.start, &v.repetition.to_sql_string(), &v.title, &v.note, &v.finished])
                         .await?;
                     let id: i32 = r[0].get(0);
@@ -170,18 +169,30 @@ async fn myecho(req: Request<Body>) -> Result<Response<Body>, TDError> {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), hyper::Error> {
+async fn main() -> Result<(), TDError> {
 
     let addr = ([127, 0, 0, 1], 3000).into();
+    let conn_info = connection_info()?;
 
-    let service = make_service_fn(move |_| {
-        async {
-            Ok::<_, hyper::Error>(service_fn(myecho))
+    let make_svc = make_service_fn({
+        let conn_info = conn_info.clone();
+        move |socket: &AddrStream| {
+            let conn_info = conn_info.clone();
+            let incoming_info = socket.remote_addr();
+            async move {
+                Ok::<_, TDError>(service_fn(move |r: Request<Body>| {
+                    eprintln!("Incoming connection: {:?}: {} `{}`", incoming_info, r.method(), r.uri().path());
+                    let conn_info = conn_info.clone();
+                    async move {
+                        myecho(r, conn_info).await
+                    }
+                }))
+            }
         }
     });
 
     let server = Server::bind(&addr)
-        .serve(service);
+        .serve(make_svc);
     
     println!("Listening on http://{}", addr);
     server.await?;

@@ -80,7 +80,7 @@ Modifications: Vec<Mods> = {
     () => { vec![] }
 }
 
-pub Cmd: (Args) = {
+pub Cmd: Args = {
     "make" <raw:RawTask> => { Args::MakeRaw(raw) },
     "mod" <id:Num> <modifs:Modifications> => { Args::Mods(id, modifs) },
     "show" <when:Period> => Args::Show(when.0, when.1),

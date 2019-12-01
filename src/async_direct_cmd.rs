@@ -1,9 +1,6 @@
-// CLI Tool version of calendar. Works with direct 
-use std::io::{Write};
-use std::error;
+// CLI Tool version of calendar. Works with direct connection to postgres
 
 use futures::{FutureExt};
-use futures::stream::TryStreamExt;
 
 use tokio_postgres::{NoTls};
 use tokio_postgres;
@@ -31,8 +28,8 @@ pub struct AsyncCmd {
 }
 
 impl AsyncCmd {
-    pub async fn new() -> Result<Self, TDError> {
-        let (client, connection) = tokio_postgres::connect("host=localhost user=dannyboyd dbname=caldata", NoTls).await?;
+    pub async fn new(conn_info: &str) -> Result<Self, TDError> {
+        let (client, connection) = tokio_postgres::connect(conn_info, NoTls).await?;
         let connection = connection.map(|r| {
           if let Err(e) = r {
             eprintln!("Connection error: {}", e)
@@ -43,41 +40,39 @@ impl AsyncCmd {
         Ok(me)
     }
 
-    // pub fn handle_load(&mut self, url: &str) {
-    //     match self.load(url) {
-    //         Ok(count) => println!("Loaded {} tasks {}", count, url),
-    //         Err(e) => println!("Error occurred during file load: {:?}", e),
-    //     }
-    // }
+    /**
+     * how do I construct filters?
+     * does constructing queries matter?
+     * The only cases I really want are date filtering
+     * I can do the date filtering in here.
+     * How can I leverage date ranges to limit query sizes? Does limiting query sizes matter?
+     * if I do like "show march 2019", I want only to query for dates where start <=march 1 2019 && (!finished && finished > april 1 2019)
+     * I think the most useful thing now is to build a date range constructor.
+     * 
+     */
 
-    // fn load(&mut self, url: &str) -> Result<usize, Box<dyn error::Error>> {
-    //     let file = fs::read_to_string(url)?;
-    //     self.storage = serde_json::from_str(&file)?;
-    //     let len = self.storage.len();
-    //     if len > 0 {
-    //         unsafe {
-    //             TaskItem::set_id_start(self.storage[len - 1].get_id());
-    //         }
-    //     }
-    //     Ok(len)
-    // }
+    async fn get_tasks(&self) -> Result<Vec<TaskItem>, TDError> {
+      let stmt = self.client.prepare("SELECT * FROM tasks").await?;
+      let rows = self.client
+        .query(&stmt, &[])
+        .await?;
+      let mut ret: Vec<TaskItem> = vec![];
+      for row in rows {
+        match from_row(row) {
+          Ok(item) => ret.push(item),
+          Err(e) => {
+            eprintln!("An error occurred: {}", e);
+          }
+        }
+      }
+      Ok(ret)
+    }
 
-    // pub fn save(&self, url: &str) -> Result<(), TDError> {
-    //     if self.storage.len() > 0 {
-    //         let mut file = File::create(url)?;
-    //         let contents = serde_json::to_string(&self.storage)?;
-    //             // .or_else(|_e| { Err(TDError::SerializeError) })?; // 3 - couldn't serialize output: if this happens, serde is broken
-    //         write!(file, "{}", contents)?;
-    //         Ok(())
-    //     } else {
-    //         Err(TDError::IOError(String::from("No items to save"))) // 1 - empty
-    //     }
-    // }
-
-    // pub fn show(&self, kind: cal::Repetition, date_raw: Option<Vec<u32>>) {
-    //     let start = cal::date_or_today(date_raw);
-    //     cal::show_type(kind, start, &self.storage);
-    // }
+    pub async fn show(&self, kind: cal::Repetition, date_raw: Option<Vec<u32>>) -> Result<(), TDError> {
+      let rows = self.get_tasks().await?;
+      let start = cal::date_or_today(date_raw);
+      Ok(cal::show_type(kind, start, &rows))
+    }
 
     pub async fn list_all(&self) -> Result<(), TDError> {
       let stmt = self.client.prepare("SELECT * FROM tasks").await?;

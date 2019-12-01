@@ -1,5 +1,5 @@
 // auto-generated: "lalrpop 0.17.2"
-// sha256: ee9eecf54d8772a15d45cb301d2dd5ec1e3fea4b37e9ddae3a72481ce106e15
+// sha256: 966e8b6fa72c913a54dd44ccad7596ede797f431c15aebd3cdb47e302b193
 use std::str::FromStr;
 use crate::task::{RawTaskItem, Mods};
 use crate::cal::Repetition;
@@ -27,7 +27,7 @@ mod __parse__Cmd {
      {
         Variant0(&'input str),
         Variant1(()),
-        Variant2((Args)),
+        Variant2(Args),
         Variant3(Vec<u32>),
         Variant4(::std::option::Option<Vec<u32>>),
         Variant5(Vec<Mods>),
@@ -433,7 +433,7 @@ mod __parse__Cmd {
         type Token = Token<'input>;
         type TokenIndex = usize;
         type Symbol = __Symbol<'input>;
-        type Success = (Args);
+        type Success = Args;
         type StateIndex = i8;
         type Action = i8;
         type ReduceIndex = i8;
@@ -1001,7 +1001,7 @@ mod __parse__Cmd {
         >(
             &self,
             input: &'input str,
-        ) -> Result<(Args), __lalrpop_util::ParseError<usize, Token<'input>, &'static str>>
+        ) -> Result<Args, __lalrpop_util::ParseError<usize, Token<'input>, &'static str>>
         {
             let mut __tokens = self.builder.matcher(input);
             let __r = __state_machine::Parser::drive(
@@ -1023,7 +1023,7 @@ mod __parse__Cmd {
         __states: &mut ::std::vec::Vec<i8>,
         __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>,
         _: ::std::marker::PhantomData<(&'input ())>,
-    ) -> Option<Result<(Args),__lalrpop_util::ParseError<usize, Token<'input>, &'static str>>>
+    ) -> Option<Result<Args,__lalrpop_util::ParseError<usize, Token<'input>, &'static str>>>
     {
         let (__pop_states, __nonterminal) = match __action {
             0 => {
@@ -1204,17 +1204,6 @@ mod __parse__Cmd {
             _ => panic!("symbol type mismatch")
         }
     }
-    fn __pop_Variant2<
-      'input,
-    >(
-        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, (Args), usize)
-     {
-        match __symbols.pop().unwrap() {
-            (__l, __Symbol::Variant2(__v), __r) => (__l, __v, __r),
-            _ => panic!("symbol type mismatch")
-        }
-    }
     fn __pop_Variant7<
       'input,
     >(
@@ -1234,6 +1223,17 @@ mod __parse__Cmd {
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant10(__v), __r) => (__l, __v, __r),
+            _ => panic!("symbol type mismatch")
+        }
+    }
+    fn __pop_Variant2<
+      'input,
+    >(
+        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
+    ) -> (usize, Args, usize)
+     {
+        match __symbols.pop().unwrap() {
+            (__l, __Symbol::Variant2(__v), __r) => (__l, __v, __r),
             _ => panic!("symbol type mismatch")
         }
     }
@@ -2349,7 +2349,7 @@ mod __parse__Date {
      {
         Variant0(&'input str),
         Variant1(()),
-        Variant2((Args)),
+        Variant2(Args),
         Variant3(Vec<u32>),
         Variant4(::std::option::Option<Vec<u32>>),
         Variant5(Vec<Mods>),
@@ -3244,17 +3244,6 @@ mod __parse__Date {
             _ => panic!("symbol type mismatch")
         }
     }
-    fn __pop_Variant2<
-      'input,
-    >(
-        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, (Args), usize)
-     {
-        match __symbols.pop().unwrap() {
-            (__l, __Symbol::Variant2(__v), __r) => (__l, __v, __r),
-            _ => panic!("symbol type mismatch")
-        }
-    }
     fn __pop_Variant7<
       'input,
     >(
@@ -3274,6 +3263,17 @@ mod __parse__Date {
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant10(__v), __r) => (__l, __v, __r),
+            _ => panic!("symbol type mismatch")
+        }
+    }
+    fn __pop_Variant2<
+      'input,
+    >(
+        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
+    ) -> (usize, Args, usize)
+     {
+        match __symbols.pop().unwrap() {
+            (__l, __Symbol::Variant2(__v), __r) => (__l, __v, __r),
             _ => panic!("symbol type mismatch")
         }
     }
@@ -4389,7 +4389,7 @@ mod __parse__Period {
      {
         Variant0(&'input str),
         Variant1(()),
-        Variant2((Args)),
+        Variant2(Args),
         Variant3(Vec<u32>),
         Variant4(::std::option::Option<Vec<u32>>),
         Variant5(Vec<Mods>),
@@ -5356,17 +5356,6 @@ mod __parse__Period {
             _ => panic!("symbol type mismatch")
         }
     }
-    fn __pop_Variant2<
-      'input,
-    >(
-        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, (Args), usize)
-     {
-        match __symbols.pop().unwrap() {
-            (__l, __Symbol::Variant2(__v), __r) => (__l, __v, __r),
-            _ => panic!("symbol type mismatch")
-        }
-    }
     fn __pop_Variant7<
       'input,
     >(
@@ -5386,6 +5375,17 @@ mod __parse__Period {
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant10(__v), __r) => (__l, __v, __r),
+            _ => panic!("symbol type mismatch")
+        }
+    }
+    fn __pop_Variant2<
+      'input,
+    >(
+        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
+    ) -> (usize, Args, usize)
+     {
+        match __symbols.pop().unwrap() {
+            (__l, __Symbol::Variant2(__v), __r) => (__l, __v, __r),
             _ => panic!("symbol type mismatch")
         }
     }
@@ -6501,7 +6501,7 @@ mod __parse__Repeats {
      {
         Variant0(&'input str),
         Variant1(()),
-        Variant2((Args)),
+        Variant2(Args),
         Variant3(Vec<u32>),
         Variant4(::std::option::Option<Vec<u32>>),
         Variant5(Vec<Mods>),
@@ -7414,17 +7414,6 @@ mod __parse__Repeats {
             _ => panic!("symbol type mismatch")
         }
     }
-    fn __pop_Variant2<
-      'input,
-    >(
-        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, (Args), usize)
-     {
-        match __symbols.pop().unwrap() {
-            (__l, __Symbol::Variant2(__v), __r) => (__l, __v, __r),
-            _ => panic!("symbol type mismatch")
-        }
-    }
     fn __pop_Variant7<
       'input,
     >(
@@ -7444,6 +7433,17 @@ mod __parse__Repeats {
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant10(__v), __r) => (__l, __v, __r),
+            _ => panic!("symbol type mismatch")
+        }
+    }
+    fn __pop_Variant2<
+      'input,
+    >(
+        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
+    ) -> (usize, Args, usize)
+     {
+        match __symbols.pop().unwrap() {
+            (__l, __Symbol::Variant2(__v), __r) => (__l, __v, __r),
             _ => panic!("symbol type mismatch")
         }
     }
@@ -8559,7 +8559,7 @@ mod __parse__Words {
      {
         Variant0(&'input str),
         Variant1(()),
-        Variant2((Args)),
+        Variant2(Args),
         Variant3(Vec<u32>),
         Variant4(::std::option::Option<Vec<u32>>),
         Variant5(Vec<Mods>),
@@ -9448,17 +9448,6 @@ mod __parse__Words {
             _ => panic!("symbol type mismatch")
         }
     }
-    fn __pop_Variant2<
-      'input,
-    >(
-        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, (Args), usize)
-     {
-        match __symbols.pop().unwrap() {
-            (__l, __Symbol::Variant2(__v), __r) => (__l, __v, __r),
-            _ => panic!("symbol type mismatch")
-        }
-    }
     fn __pop_Variant7<
       'input,
     >(
@@ -9478,6 +9467,17 @@ mod __parse__Words {
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant10(__v), __r) => (__l, __v, __r),
+            _ => panic!("symbol type mismatch")
+        }
+    }
+    fn __pop_Variant2<
+      'input,
+    >(
+        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
+    ) -> (usize, Args, usize)
+     {
+        match __symbols.pop().unwrap() {
+            (__l, __Symbol::Variant2(__v), __r) => (__l, __v, __r),
             _ => panic!("symbol type mismatch")
         }
     }
@@ -10771,8 +10771,8 @@ fn __action4<
     'input,
 >(
     input: &'input str,
-    (_, __0, _): (usize, (Args), usize),
-) -> (Args)
+    (_, __0, _): (usize, Args, usize),
+) -> Args
 {
     (__0)
 }
@@ -11183,7 +11183,7 @@ fn __action38<
     input: &'input str,
     (_, _, _): (usize, &'input str, usize),
     (_, raw, _): (usize, RawTaskItem, usize),
-) -> (Args)
+) -> Args
 {
     { Args::MakeRaw(raw) }
 }
@@ -11196,7 +11196,7 @@ fn __action39<
     (_, _, _): (usize, &'input str, usize),
     (_, id, _): (usize, i32, usize),
     (_, modifs, _): (usize, Vec<Mods>, usize),
-) -> (Args)
+) -> Args
 {
     { Args::Mods(id, modifs) }
 }
@@ -11208,7 +11208,7 @@ fn __action40<
     input: &'input str,
     (_, _, _): (usize, &'input str, usize),
     (_, when, _): (usize, (Repetition, Option<Vec<u32>>), usize),
-) -> (Args)
+) -> Args
 {
     Args::Show(when.0, when.1)
 }
@@ -11220,7 +11220,7 @@ fn __action41<
     input: &'input str,
     (_, _, _): (usize, &'input str, usize),
     (_, id, _): (usize, i32, usize),
-) -> (Args)
+) -> Args
 {
     { Args::Do(id) }
 }
@@ -11232,7 +11232,7 @@ fn __action42<
     input: &'input str,
     (_, _, _): (usize, &'input str, usize),
     (_, id, _): (usize, i32, usize),
-) -> (Args)
+) -> Args
 {
     { Args::Finish(id) }
 }
@@ -11243,7 +11243,7 @@ fn __action43<
 >(
     input: &'input str,
     (_, __0, _): (usize, &'input str, usize),
-) -> (Args)
+) -> Args
 {
     Args::List
 }
@@ -11254,7 +11254,7 @@ fn __action44<
 >(
     input: &'input str,
     (_, __0, _): (usize, &'input str, usize),
-) -> (Args)
+) -> Args
 {
     Args::Help
 }
@@ -11265,7 +11265,7 @@ fn __action45<
 >(
     input: &'input str,
     (_, __0, _): (usize, &'input str, usize),
-) -> (Args)
+) -> Args
 {
     Args::Save
 }
@@ -11276,7 +11276,7 @@ fn __action46<
 >(
     input: &'input str,
     (_, __0, _): (usize, &'input str, usize),
-) -> (Args)
+) -> Args
 {
     Args::Quit
 }
