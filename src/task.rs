@@ -4,9 +4,10 @@ use chrono::NaiveDate;
 use crate::cal::{Repetition};
 use crate::cal;
 use std::fmt;
+use std::str::FromStr;
 static mut NEXT_ID: i32 = 1;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TaskItem {
     id: i32,
     pub start: NaiveDate,
@@ -23,6 +24,21 @@ pub enum Mods {
     Rep(cal::Repetition),
     Title(String),
     Note(String),
+}
+
+impl Mods {
+    pub fn to_sql(&self) -> Result<String, crate::TDError> {
+        Ok(match self {
+            Self::Start(date_raw) => {
+                let start = cal::get_start(date_raw.to_vec())?;
+                let start = start.format("%Y-%m-%d").to_string();
+                format!("start='{}' ", start)
+            },
+            Self::Rep(r) => format!("repeats='{}' ", r.to_sql_string()),
+            Self::Title(t) => format!("title='{}' ", t),
+            Self::Note(n) => format!("note='{}' ", n)
+        })
+    }
 }
 
 impl TaskItem {
@@ -54,11 +70,12 @@ impl TaskItem {
         }
     }
 
-    pub unsafe fn from_raw(raw: RawTaskItem) -> Option<TaskItem> {
-        let start = cal::get_start(raw.start)?;
-        let task = TaskItem::new(start, raw.title, raw.note, raw.repetition);
-        Some(task)
-    }
+    // pub unsafe fn from_raw(raw: RawTaskItem) -> Option<TaskItem> {
+    //     let start = cal::get_start(raw.start)?;
+    //     let rep = cal::Repetition::from_str(&raw.repetition)?;
+    //     let task = TaskItem::new(start, raw.title, raw.note, rep);
+    //     Some(task)
+    // }
 
     pub fn apply_modifications(&mut self, mods: Vec<Mods>) {
         for m in mods {
@@ -115,19 +132,20 @@ impl TaskItem {
 
 impl fmt::Display for TaskItem {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} - {}: {}, {rep}\nNotes: {note}",
+        write!(f, "{} - {}: {}, {rep}\nNotes: {note}\nFinished: {finished}",
             id=self.get_id(),
             title=self.title,
             start=self.start,
             rep=self.repetition,
-            note=self.note)
+            note=self.note,
+            finished=self.finished)
     }
 }
 
 #[derive(Debug)]
 pub struct RawTaskItem {
     pub start: Vec<u32>,
-    pub repetition: Repetition,
+    pub repetition: String,
     pub title: String,
     pub note: String,
     pub finished: bool,
@@ -137,7 +155,7 @@ impl RawTaskItem {
     pub fn new_empty() -> RawTaskItem {
         RawTaskItem {
             start: vec![],
-            repetition: Repetition::Weekly,
+            repetition: String::from("w"),
             title: String::from("Title"),
             note: String::from(""),
             finished: false,

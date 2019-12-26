@@ -14,7 +14,7 @@ use ansi_term::Color::{Yellow};
 use crate::task::TaskItem;
 use super::TDError;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Repetition {
     Never,
     Daily,

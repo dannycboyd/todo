@@ -111,14 +111,14 @@ impl Cmd {
     }
 
     pub fn make_raw(&mut self, raw: RawTaskItem) {
-        unsafe {
-            match TaskItem::from_raw(raw) {
-                None => println!("An error occurred parsing the raw task item. Likely an issue with the dates"),
-                Some(task) => {
-                    println!("New task: {:?}", task);
-                    self.storage.push(task);
-                }
-            }
-        }
+        // unsafe {
+        //     match TaskItem::from_raw(raw) {
+        //         None => println!("An error occurred parsing the raw task item. Likely an issue with the dates"),
+        //         Some(task) => {
+        //             println!("New task: {:?}", task);
+        //             self.storage.push(task);
+        //         }
+        //     }
+        // }
     }
 }

@@ -6,6 +6,7 @@ pub mod cal;
 pub mod parser_cmd;
 pub mod async_direct_cmd;
 pub mod task;
+pub mod parser_help;
 
 pub const DEFAULT_FILE: &str = "./caldata.json";
 // #[macro_use] extern crate lalrpop_util;
@@ -158,20 +159,23 @@ pub fn connection_info() -> Result<String, TDError> {
   }
 
   if !has_dbname {
-      let dbname = env::var("TODO_DBNAME")?;
-      let dbname = format!("dbname={} ", dbname);
-      db_string.push_str(&dbname);
+    println!("Getting TODO_DBNAME from environment...");
+    let dbname = env::var("TODO_DBNAME")?;
+    let dbname = format!("dbname={} ", dbname);
+    db_string.push_str(&dbname);
   }
   if !has_user {
-      let dbuser = env::var("TODO_USERNAME")?;
-      let dbuser = format!("username={} ", dbuser);
-      db_string.push_str(&dbuser);
+    println!("Getting TODO_USERNAME from environment...");
+    let dbuser = env::var("TODO_USERNAME")?;
+    let dbuser = format!("user={} ", dbuser);
+    db_string.push_str(&dbuser);
 
   }
   if !has_host {
-      let dbhost = env::var("TODO_HOSTNAME")?;
-      let dbhost = format!("host={}", dbhost);
-      db_string.push_str(&dbhost);
+    println!("Getting TODO_HOSTNAME from environment...");
+    let dbhost = env::var("TODO_HOSTNAME")?;
+    let dbhost = format!("host={}", dbhost);
+    db_string.push_str(&dbhost);
   }
   Ok(db_string)
 }

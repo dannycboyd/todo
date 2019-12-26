@@ -2,9 +2,9 @@ use std::io;
 extern crate chrono;
 
 extern crate to_do;
-use to_do::parser_cmd::{Cmd, Args};
-use to_do::async_direct_cmd::{AsyncCmd};
+use to_do::async_direct_cmd::{AsyncCmd, Args};
 use to_do::{task_item, TDError, connection_info};
+use to_do::parser_help::detailed_help;
 
 type CmdResult<T> = std::result::Result<T, TDError>;
 
@@ -27,19 +27,28 @@ async fn run() -> Result<(), TDError> {
     println!("{:?}", db_string);
 
     let parser = task_item::CmdParser::new();
+    let fallbackParser = task_item::RecoveryParser::new();
     let cmdline = AsyncCmd::new(&db_string).await?;
 
     loop {
         let mut cmd_raw = String::new();
         let _bytes_read = read(&mut cmd_raw)?;
-        let cmd = parse(&parser, &cmd_raw);
+        let cmd = parser.parse(&cmd_raw);
 
         let cmd_result = match cmd {
+            Ok(Args::MakeRaw(raw)) => cmdline.make(raw).await,
             Ok(Args::List) => cmdline.list_all().await,
-            Ok(Args::Show(rep, when)) => cmdline.show(rep, when).await,
+            Ok(Args::Show(rep, when)) => cmdline.show(rep, when).await, // this needs to change so we can see period around [date]
+            Ok(Args::Mods(id, mods)) => cmdline.modify(id, mods).await,
+            Ok(Args::Detail(id)) => cmdline.show_id(id).await,
+            Ok(Args::Do(id, date, finished)) => cmdline.do_task(id, date, finished).await,
+            Ok(Args::Help(cmd)) => detailed_help(cmd),
             Ok(Args::Quit) => break,
             Err(e) => {
-                println!("{}", e);
+                match fallbackParser.parse(&cmd_raw) {
+                    Ok(cmd) => detailed_help(Some(cmd)),
+                    Err(e) => detailed_help(None)
+                };
                 Ok(())
             },
             _ => Ok(())
@@ -49,7 +58,7 @@ async fn run() -> Result<(), TDError> {
 }
 
 #[tokio::main]
-async fn main () -> Result<(), TDError> {
+async fn main () -> CmdResult<()> {
     let date_p = task_item::DateParser::new();
     let rep_p = task_item::RepeatsParser::new();
     let per_p = task_item::PeriodParser::new();

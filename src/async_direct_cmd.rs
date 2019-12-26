@@ -4,20 +4,22 @@ use futures::{FutureExt};
 
 use tokio_postgres::{NoTls};
 use tokio_postgres;
+use chrono::NaiveDate;
 
 use super::task::{ TaskItem, RawTaskItem, Mods };
 use super::{cal, TDError, from_row};
 
 #[derive(Debug)]
 pub enum Args {
-    Do(u32),
-    Finish(u32),
-    Help,
+    Do(i32, Option<Vec<u32>>, bool),
+    Help(Option<String>),
     List,
     MakeRaw(RawTaskItem),
-    Mods(u32, Vec<Mods>),
-    Save,
+    Mods(i32, Vec<Mods>),
+    // Save,
     Show(cal::Repetition, Option<Vec<u32>>),
+    Detail(i32),
+    NoOp,
     Quit,
 }
 
@@ -51,6 +53,38 @@ impl AsyncCmd {
      * 
      */
 
+    async fn task_by_id(&self, id: i32) -> Result<TaskItem, TDError> {
+      let filters = vec![(String::from("id"), String::from("="), format!("{}", id))];
+      let tasks = self.get_tasks_by(filters).await?;
+      match tasks.first() {
+        Some(t) => Ok(t.clone()),
+        None => Err(TDError::NoneError)
+      }
+    }
+
+    async fn get_tasks_by(&self, filters: Vec<(String, String, String)>) -> Result<Vec<TaskItem>, TDError> {
+      let mut query = String::from("SELECT * FROM tasks ");
+      for (index, filter) in filters.iter().enumerate() {
+
+        let join = match index {
+          0 => "where",
+          _ => "and"
+        };
+        query.push_str(&format!("{} {} {} {}", join, filter.0, filter.1, filter.2))
+      };
+
+
+      let rows = self.client.query(query.as_str(), &[]).await?;
+      let mut ret: Vec<TaskItem> = vec![];
+      for row in rows {
+        match from_row(row) {
+          Ok(item) => ret.push(item),
+          Err(e) => eprintln!("An error trying to parse task: {}", e)
+        }
+      }
+      Ok(ret)
+    }
+
     async fn get_tasks(&self) -> Result<Vec<TaskItem>, TDError> {
       let stmt = self.client.prepare("SELECT * FROM tasks").await?;
       let rows = self.client
@@ -74,6 +108,29 @@ impl AsyncCmd {
       Ok(cal::show_type(kind, start, &rows))
     }
 
+    pub async fn show_id(&self, id: i32) -> Result<(), TDError> {
+      let stmt = self.client.prepare("SELECT * FROM tasks where id = $1").await?;
+      let rows = self.client
+        .query(&stmt, &[&id])
+        .await?;
+
+      for row in rows {
+        match from_row(row) {
+          Ok(item) => println!("{}", item),
+          Err(e) => eprintln!("An error occurred: {}", e)
+        };
+        let stmt = self.client.prepare("SELECT * FROM task_completions where task_id = $1").await?;
+        let rows = self.client.query(&stmt, &[&id])
+          .await?;
+
+        for row in rows {
+          let date: NaiveDate = row.try_get("date")?;
+          println!("{}", date)
+        }
+      }
+      Ok(())
+    }
+
     pub async fn list_all(&self) -> Result<(), TDError> {
       let stmt = self.client.prepare("SELECT * FROM tasks").await?;
       let rows = self.client
@@ -94,50 +151,47 @@ impl AsyncCmd {
 
     }
 
-    // fn find_task_by_id(&mut self, id: i32) -> Option<&mut TaskItem> {
-    //     self.storage.iter_mut().find(|task| task.get_id() == id)
-    // }
+    pub async fn make(&self, raw: RawTaskItem) -> Result<(), TDError> {
+      let stmt = self.client.prepare("INSERT into tasks (start, repeats, title, note, finished) VALUES ($1, $2, $3, $4, $5) RETURNING id").await?;
+      let result = self.client.query(&stmt, &[&raw.start, &raw.repetition, &raw.title, &raw.note, &raw.finished])
+        .await?;
+      Ok(())
+    }
 
-    // pub fn modify(&mut self, id: i32, cmds: Vec<Mods>) {
-    //     match self.find_task_by_id(id) {
-    //         Some(task) => {
-    //             task.apply_modifications(cmds);
-    //         },
-    //         None => println!("No task exists with id {}!", id),
-    //     }
-    // }
+    pub async fn modify(&self, id: i32, changes: Vec<Mods>) -> Result<(), TDError> {
+      if changes.len() > 0 {
+        let mut query_str = String::from("UPDATE tasks SET ");
+        for change in changes {
+          let change = change.to_sql()?;
+          query_str.push_str(&change);
+        }
 
-    // pub fn do_task(&mut self, id: i32) {
-    //     match self.find_task_by_id(id) {
-    //         Some(task) => {
-    //             println!("Mark done today");
-    //             task.mark_completed(cal::date_or_today(None));
-    //             println!("Done! {:?}", task)
-    //         },
-    //         None => println!("Can't find task with id {}", id),
-    //     }
-    // }
+        query_str.push_str(&format!("WHERE id = {}", id));
 
-    // pub fn finish_task(&mut self, id: i32) {
-    //     match self.find_task_by_id(id) {
-    //         Some(task) => {
-    //             println!("Mark finished today");
-    //             task.mark_finished(cal::date_or_today(None));
-    //             println!("Finished {}", task)
-    //         },
-    //         None => println!("Can't find task with id {}", id),
-    //     }
-    // }
+        println!("{}", query_str);
+        let _r = self.client.query(query_str.as_str(), &[]).await?;
 
-    // pub fn make_raw(&mut self, raw: RawTaskItem) {
-    //     unsafe {
-    //         match TaskItem::from_raw(raw) {
-    //             None => println!("An error occurred parsing the raw task item. Likely an issue with the dates"),
-    //             Some(task) => {
-    //                 println!("New task: {:?}", task);
-    //                 self.storage.push(task);
-    //             }
-    //         }
-    //     }
-    // }
+        Ok(())
+      } else {
+        Err(TDError::NoneError)
+      }
+    }
+
+    pub async fn do_task(&self, id: i32, date: Option<Vec<u32>>, finished: bool) -> Result<(), TDError> {
+      let query_str = String::from("INSERT INTO task_completions (task_id, date) VALUES ($1, $2) RETURNING id");
+      let date = cal::date_or_today(date);
+      let r = self.client.query(query_str.as_str(), &[&id, &date]).await?;
+
+      if r.len() > 0 {
+        println!("Completed task {} for date {}", id, date);
+      } else {
+        return Err(TDError::PostgresError("Something went wrong".to_string()));
+      }
+
+      if finished {
+        let query_str = String::from("UPDATE tasks SET finished=$1 where id = $2");
+        let _r = self.client.query(query_str.as_str(), &[&finished, &id]).await?;
+      }
+      Ok(())
+    }
 }
