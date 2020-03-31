@@ -18,11 +18,15 @@ fn rep_parts() -> String {
 
 fn task_parts() -> String {
   let parts3 = String::from("text_data: `Title` `Note` | t:`Title` | n:`Note`");
-  format!("\n\tstart_date: {date}\n\trepetition: {rep}\n\t{text}", date=date_parts(), rep=rep_parts(), text=parts3)
+  format!("start_date, repetition, [text_data]\n\tstart_date: {date}\n\trepetition: {rep}\n\t{text}", date=date_parts(), rep=rep_parts(), text=parts3)
 }
 
 fn mod_help() -> String {
   format!("mod id [modification...]\nmodification:{}", task_parts())
+}
+
+fn make_help() -> String {
+  format!("make {}", task_parts())
 }
 
 fn show_help() -> String {
@@ -42,7 +46,7 @@ fn list() -> String {
 }
 
 pub fn basic_help() {
-  println!("Valid commands are 'mod', 'show', 'detail', 'do', 'list', 'help', 'q'")
+  println!("Valid commands are 'make', 'mod', 'show', 'detail', 'do', 'list', 'help', 'q'")
 }
 
 // may be worthwhile to make the recognized commands into an enum? they're written separately multiple places
@@ -50,6 +54,7 @@ pub fn detailed_help(cmd: Option<String>) -> Result<(), TDError> {
   match cmd {
     Some(cmd) => {
       match cmd.as_ref() { // fix this mess so it does a boilerplate "usage: {}", cmd_help() sort of thing
+        "make" => println!("{}\nCreate a new task.", make_help()),
         "mod" => println!("{}\nModify a task by id.", mod_help()),
         "show" => println!("{}\nShow tasks in surrounding period.", show_help()),
         "detail" => println!("{}\nShow detailed info on task with id.", detail()),
