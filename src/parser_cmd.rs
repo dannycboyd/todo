@@ -1,4 +1,4 @@
-// command line crate
+// command line crate. Works on local storage .json. I want a similar API sort of thing like this but for the server.
 use std::io::{Write};
 
 use serde_json;
@@ -12,12 +12,12 @@ use super::DEFAULT_FILE;
 
 #[derive(Debug)]
 pub enum Args {
-    Do(u32),
-    Finish(u32),
+    Do(i32),
+    Finish(i32),
     Help,
     List,
     MakeRaw(RawTaskItem),
-    Mods(u32, Vec<Mods>),
+    Mods(i32, Vec<Mods>),
     Save,
     Show(cal::Repetition, Option<Vec<u32>>),
     Quit,
@@ -41,7 +41,7 @@ impl Cmd {
         }
     }
 
-    fn load(&mut self, url: &str) -> Result<usize, Box<error::Error>> {
+    fn load(&mut self, url: &str) -> Result<usize, Box<dyn error::Error>> {
         let file = fs::read_to_string(url)?;
         self.storage = serde_json::from_str(&file)?;
         let len = self.storage.len();
@@ -56,8 +56,7 @@ impl Cmd {
     pub fn save(&self, url: &str) -> Result<(), TDError> {
         if self.storage.len() > 0 {
             let mut file = File::create(url)?;
-            let contents = serde_json::to_string(&self.storage)
-                .or_else(|_e| { Err(TDError::SerializeError) })?; // 3 - couldn't serialize output: if this happens, serde is broken
+            let contents = serde_json::to_string(&self.storage)?;
             write!(file, "{}", contents)?;
             Ok(())
         } else {
@@ -76,11 +75,11 @@ impl Cmd {
         }
     }
 
-    fn find_task_by_id(&mut self, id: u32) -> Option<&mut TaskItem> {
+    fn find_task_by_id(&mut self, id: i32) -> Option<&mut TaskItem> {
         self.storage.iter_mut().find(|task| task.get_id() == id)
     }
 
-    pub fn modify(&mut self, id: u32, cmds: Vec<Mods>) {
+    pub fn modify(&mut self, id: i32, cmds: Vec<Mods>) {
         match self.find_task_by_id(id) {
             Some(task) => {
                 task.apply_modifications(cmds);
@@ -89,7 +88,7 @@ impl Cmd {
         }
     }
 
-    pub fn do_task(&mut self, id: u32) {
+    pub fn do_task(&mut self, id: i32) {
         match self.find_task_by_id(id) {
             Some(task) => {
                 println!("Mark done today");
@@ -100,7 +99,7 @@ impl Cmd {
         }
     }
 
-    pub fn finish_task(&mut self, id: u32) {
+    pub fn finish_task(&mut self, id: i32) {
         match self.find_task_by_id(id) {
             Some(task) => {
                 println!("Mark finished today");
@@ -112,14 +111,14 @@ impl Cmd {
     }
 
     pub fn make_raw(&mut self, raw: RawTaskItem) {
-        unsafe {
-            match TaskItem::from_raw(raw) {
-                None => println!("An error occurred parsing the raw task item. Likely an issue with the dates"),
-                Some(task) => {
-                    println!("New task: {:?}", task);
-                    self.storage.push(task);
-                }
-            }
-        }
+        // unsafe {
+        //     match TaskItem::from_raw(raw) {
+        //         None => println!("An error occurred parsing the raw task item. Likely an issue with the dates"),
+        //         Some(task) => {
+        //             println!("New task: {:?}", task);
+        //             self.storage.push(task);
+        //         }
+        //     }
+        // }
     }
 }

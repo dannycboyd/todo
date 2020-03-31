@@ -1,14 +1,10 @@
 use std::io;
-
 extern crate chrono;
 
 extern crate to_do;
-use to_do::parser_cmd::{Cmd, Args};
-use to_do::task_item;
-use to_do::DEFAULT_FILE;
-
-use to_do::TDError;
-use to_do::TDError::*;
+use to_do::async_direct_cmd::{AsyncCmd, Args};
+use to_do::{task_item, TDError, connection_info};
+use to_do::parser_help::detailed_help;
 
 type CmdResult<T> = std::result::Result<T, TDError>;
 
@@ -21,42 +17,48 @@ fn parse(parser: &task_item::CmdParser, cmd_raw: &str) -> CmdResult<Args> {
     parser.parse(cmd_raw)
         .or_else(|err| {
             let foo = format!("{}", err);
-            Err(ParseError(foo))
+            Err(TDError::ParseError(foo))
         })
 }
 
-fn run() {
+async fn run() -> Result<(), TDError> {
+
+    let db_string = connection_info()?;
+    println!("{:?}", db_string);
+
     let parser = task_item::CmdParser::new();
-    let mut cmdline = Cmd::new();
+    let fallbackParser = task_item::RecoveryParser::new();
+    let cmdline = AsyncCmd::new(&db_string).await?;
+
     loop {
         let mut cmd_raw = String::new();
-        let something: CmdResult<()> = read(&mut cmd_raw)
-            .and_then(|_len| { parse(&parser, &cmd_raw) })
-            .and_then(|cmd| {
-                 match cmd {
-                    Args::MakeRaw(raw) => cmdline.make_raw(raw),
-                    Args::Do(id) => cmdline.do_task(id),
-                    Args::Finish(id) => cmdline.finish_task(id),
-                    Args::Mods(id, cmds) => cmdline.modify(id, cmds),
-                    Args::Show(kind, when) => cmdline.show(kind, when),
-                    Args::List => cmdline.list_all(),
-                    Args::Save => return cmdline.save(DEFAULT_FILE),
-                    Args::Help => (),
-                    Args::Quit => return Err(Quit),
+        let _bytes_read = read(&mut cmd_raw)?;
+        let cmd = parser.parse(&cmd_raw);
+
+        let cmd_result = match cmd {
+            Ok(Args::MakeRaw(raw)) => cmdline.make(raw).await,
+            Ok(Args::List) => cmdline.list_all().await,
+            Ok(Args::Show(rep, when)) => cmdline.show(rep, when).await, // this needs to change so we can see period around [date]
+            Ok(Args::Mods(id, mods)) => cmdline.modify(id, mods).await,
+            Ok(Args::Detail(id)) => cmdline.show_id(id).await,
+            Ok(Args::Do(id, date, finished)) => cmdline.do_task(id, date, finished).await,
+            Ok(Args::Help(cmd)) => detailed_help(cmd),
+            Ok(Args::Quit) => break,
+            Err(e) => {
+                match fallbackParser.parse(&cmd_raw) {
+                    Ok(cmd) => detailed_help(Some(cmd)),
+                    Err(e) => detailed_help(None)
                 };
                 Ok(())
-            });
-        match something {
-            Ok(_) => (),
-            Err(Quit) => break,
-            Err(ParseError(e)) => eprintln!("Parser error: {}", e),
-            Err(IOError(e)) => eprintln!("IO Error: {}", e),
-            Err(_) => eprintln!("An error occurred"),
-        }
+            },
+            _ => Ok(())
+        };
     }
+    Ok(())
 }
 
-fn main () {
+#[tokio::main]
+async fn main () -> CmdResult<()> {
     let date_p = task_item::DateParser::new();
     let rep_p = task_item::RepeatsParser::new();
     let per_p = task_item::PeriodParser::new();
@@ -73,5 +75,6 @@ fn main () {
     println!("{:?}", per_p.parse("m 04-20"));
     println!("{:?}", per_p.parse("d"));
 
-    run();
+    run().await?;
+    Ok(())
 }

@@ -2,18 +2,18 @@ use std::str::FromStr;
 use crate::task::{RawTaskItem, Mods};
 use crate::cal::Repetition;
 
-use crate::parser_cmd::{Args};
+use crate::async_direct_cmd::{Args};
 
 grammar;
 
 pub Date: Vec<u32> = {
-    <day:Num> => vec![day],
-    <month:Num> "-" <day:Num> => vec![month, day],
-    <month:Num> "-" <day:Num> "-" <year:Year> => vec![month, day, year],
+    <day:Num> => vec![day as u32],
+    <month:Num> "-" <day:Num> => vec![month as u32, day as u32],
+    <month:Num> "-" <day:Num> "-" <year:Year> => vec![month as u32, day as u32, year],
 }
 
-Num: u32 = {
-    r"[0-9]{1,2}" => u32::from_str(<>).unwrap()
+Num: i32 = {
+    r"[0-9]{1,2}" => i32::from_str(<>).unwrap()
 }
 
 Year: u32 = {
@@ -31,6 +31,14 @@ pub Repeats: Repetition = {
     "monthly" => Repetition::Monthly,
     "y" => Repetition::Yearly,
     "yearly" => Repetition::Yearly,
+}
+
+RepRaw = {
+    "n",
+    "d",
+    "w",
+    "m",
+    "y"
 }
 
 pub Period: (Repetition, Option<Vec<u32>>) = {
@@ -57,15 +65,31 @@ Word: String = {
     <w:r"[A-Za-z;:,.!\-+]+"> => String::from(w)
 }
 
+True: bool = {
+    "1" => true,
+    "t" => true,
+    "true" => true,
+    "y" => true,
+    "yes" => true
+}
+
+False: bool = {
+    "0" => false
+}
+
+Bool: bool = {
+    <t:True> => t,
+    <f:False> => f
+}
+
 Task: (Vec<u32>, String, String, Repetition) = {
     <date:Date> <rep:Repeats> <title:Words> <desc:Words> => (date, title, desc, rep),
-    <date:Date> <title:Words> <desc:Words> => (date, title, desc, Repetition::Weekly),
-
+    <date:Date> <title:Words> <desc:Words> => (date, title, desc, Repetition::Weekly)
 }
 
 RawTask: RawTaskItem = {
     <task:RawTask> <start:Date> => { let mut task = task; task.start = start; task },
-    <task:RawTask> <rep:Repeats> => { let mut task = task; task.repetition = rep; task },
+    <task:RawTask> <rep:RepRaw> => { let mut task = task; task.repetition = String::from(rep); task },
     <task:RawTask> <title:Words> <note:Words> => { let mut task = task; task.title = title; task.note = note; task },
     <task:RawTask> "t:" <title:Words> => { let mut task = task; task.title = title; task },
     <task:RawTask> "n:" <note:Words> => { let mut task = task; task.note = note; task },
@@ -80,14 +104,39 @@ Modifications: Vec<Mods> = {
     () => { vec![] }
 }
 
-pub Cmd: (Args) = {
+CmdName = {
+    "make",
+    "mod",
+    "show",
+    "detail",
+    "do",
+    "list",
+    "help",
+    "q"
+}
+
+CmdStr: String = {
+    CmdName => String::from(<>)
+}
+
+pub Recovery: String = {
+    <cmd:CmdName> <any:Word*> => String::from(cmd)
+}
+
+pub Cmd: Args = {
     "make" <raw:RawTask> => { Args::MakeRaw(raw) },
     "mod" <id:Num> <modifs:Modifications> => { Args::Mods(id, modifs) },
     "show" <when:Period> => Args::Show(when.0, when.1),
-    "do" <id:Num> => { Args::Do(id) },
-    "finish" <id:Num> => { Args::Finish(id) }, 
+    "detail" <id:Num> => { Args::Detail(id) },
+    "do" <id:Num> <date:Date?> <t:Bool?> => {
+        let t = match t {
+            Some(value) => value,
+            None => false
+        };
+        Args::Do(id, date, t)
+    },
     "list" => Args::List,
-    "help" => Args::Help,
-    "save" => Args::Save,
+    "help" <w:CmdStr?> => Args::Help(w),
     "q" => Args::Quit,
+    () => Args::NoOp,
 }
