@@ -152,6 +152,7 @@ impl AsyncCmd {
     }
 
     pub async fn make(&self, raw: RawTaskItem) -> Result<(), TDError> {
+      println!("make: {:?}", raw);
       let stmt = self.client.prepare("INSERT into tasks (start, repeats, title, note, finished) VALUES ($1, $2, $3, $4, $5) RETURNING id").await?;
       let result = self.client.query(&stmt, &[&raw.start, &raw.repetition, &raw.title, &raw.note, &raw.finished])
         .await?;
