@@ -4,7 +4,8 @@ use chrono::NaiveDate;
 use crate::cal::{Repetition};
 use crate::cal;
 use std::fmt;
-use std::str::FromStr;
+// use std::str::FromStr;
+use crate::{TDError, from_row};
 static mut NEXT_ID: i32 = 1;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -27,10 +28,10 @@ pub enum Mods {
 }
 
 impl Mods {
-    pub fn to_sql(&self) -> Result<String, crate::TDError> {
+    pub fn to_sql(&self) -> Result<String, TDError> {
         Ok(match self {
             Self::Start(date_raw) => {
-                let start = cal::get_start(date_raw.to_vec())?;
+                let start = cal::get_start(&date_raw.to_vec())?;
                 let start = start.format("%Y-%m-%d").to_string();
                 format!("start='{}' ", start)
             },
@@ -41,6 +42,14 @@ impl Mods {
     }
 }
 
+/**
+ * I think _most_ of this class can go away. The modification functions need to be centralized here instead of in the server/async_cmd_direct
+ * 
+ * On the same note, most all of the update/creation happens by either raw task items OR by a vec<mods>, so it may be enough to just have a module for all this
+ * instead of the TaskItem struct/impl, since we don't need to address a memory object, we just need to open a db connection and query it.
+ * 
+ * OTOH, we do want a way to print the results, so keeping this class so that we can pull stuff from the DB and then print it out is good.
+ */
 impl TaskItem {
     pub unsafe fn new(start: NaiveDate, title: String, note: String, rep: Repetition) -> TaskItem {
         NEXT_ID += 1;
@@ -80,7 +89,7 @@ impl TaskItem {
     pub fn apply_modifications(&mut self, mods: Vec<Mods>) {
         for m in mods {
             match m {
-                Mods::Start(raw_start) => match cal::get_start(raw_start.to_vec()) {
+                Mods::Start(raw_start) => match cal::get_start(&raw_start.to_vec()) {
                     Some(start) => self.start = start,
                     None => println!("Can't make {:?} into a date!", raw_start),
                 },
@@ -99,6 +108,7 @@ impl TaskItem {
         self.id = new_id;
     }
 
+    // TODO: DELETE
     pub fn mark_completed(&mut self, day: NaiveDate) {
         let mut i: usize = 0;
         while i < self.completed.len() {
@@ -128,6 +138,49 @@ impl TaskItem {
             None => false,
         }
     }
+    // END
+
+    // Is there a cleaner way to do this?
+    pub async fn get(client: &tokio_postgres::Client, id: i32) -> Result<TaskItem, TDError> {
+        let stmt = client.prepare("SELECT * FROM tasks WHERE id = $1").await?;
+        let rows = client.query(&stmt, &[&id]).await?;
+        // .iter();
+
+        // if rows.len() > 0 {
+        //     return from_row(rows.next().unwrap())
+        // }
+
+        for row in rows {
+            return from_row(row)
+        }
+        Err(TDError::NoneError)
+    }
+
+    pub async fn get_all(client: &tokio_postgres::Client) -> Result<Vec<TaskItem>, TDError> {
+        let stmt = client.prepare("SELECT * FROM tasks").await?;
+        let rows = client.query(&stmt, &[]).await?;
+        let mut tasks = vec![];
+
+        for row in rows {
+            match from_row(row) {
+                Ok(item) => tasks.push(item),
+                Err(e) => eprintln!("Could not parse task: {}", e)
+            }
+        }
+        Ok(tasks)
+    }
+
+    pub async fn get_completions(client: &tokio_postgres::Client, id: i32) -> Result<Vec<NaiveDate>, TDError> {
+        let stmt = client.prepare("SELECT * FROM task_completions WHERE task_id = $1").await?;
+        let rows = client.query(&stmt, &[&id]).await?;
+
+        let mut dates = vec![];
+        for row in rows {
+            let date: NaiveDate = row.try_get("date")?;
+            dates.push(date);
+        }
+        Ok(dates)
+    }
 }
 
 impl fmt::Display for TaskItem {
@@ -155,10 +208,18 @@ impl RawTaskItem {
     pub fn new_empty() -> RawTaskItem {
         RawTaskItem {
             start: vec![],
-            repetition: String::from("w"),
+            repetition: String::from("m"),
             title: String::from("Title"),
             note: String::from(""),
             finished: false,
         }
+    }
+
+    pub async fn insert(&self, client: &tokio_postgres::Client) -> Result<(), TDError> {
+        let query_str = String::from("INSERT INTO tasks (start, repeats, title, note, finished) VALUES ($1, $2, $3, $4, $5)");
+        let stmt = client.prepare(&query_str).await?;
+        let start = cal::get_start(&self.start)?;
+        client.query(&stmt, &[&start, &self.repetition, &self.title, &self.note, &self.finished]).await?;
+        Ok(())
     }
 }

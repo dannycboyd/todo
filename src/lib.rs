@@ -130,6 +130,10 @@ fn from_row(row: Row) -> Result<TaskItem, TDError> {
   Ok(TaskItem::new_by_id(id, date, title.to_string(), note.to_string(), rep, finished))
 }
 
+// pub trait TDInsert<T> {
+//   fn insert(&self) -> Result<T, TDError>;
+// }
+
 pub fn connection_info() -> Result<String, TDError> {
 
   let mut has_dbname = false;

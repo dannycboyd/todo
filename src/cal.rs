@@ -258,7 +258,7 @@ pub fn print_year(start: NaiveDate, tasks: &Vec<TaskItem>) {
 
 }
 
-pub fn get_start(values: Vec<u32>) -> Option<NaiveDate> {
+pub fn get_start(values: &Vec<u32>) -> Option<NaiveDate> {
     let current = Local::now().date();
     if values.len() == 1 {
         NaiveDate::from_ymd_opt(current.year(), values[0], current.day())
@@ -271,9 +271,16 @@ pub fn get_start(values: Vec<u32>) -> Option<NaiveDate> {
     }
 }
 
+// pub fn start(values: Vec<u32>) -> Result<NaiveDate, TDError> {
+//     match get_start(values) {
+//         Some(date) => Ok(date),
+//         None => Err(TDError::IOError(String::from("cal::start: Could not make date")))
+//     }
+// }
+
 pub fn date_or_today(values: Option<Vec<u32>>) -> NaiveDate {
     match values {
-        Some(raw) => match get_start(raw) {
+        Some(raw) => match get_start(&raw) {
             Some(date) => date,
             None => Local::now().date().naive_local()
         },

@@ -40,11 +40,11 @@ async fn run() -> Result<(), TDError> {
             Ok(Args::List) => cmdline.list_all().await,
             Ok(Args::Show(rep, when)) => cmdline.show(rep, when).await, // this needs to change so we can see period around [date]
             Ok(Args::Mods(id, mods)) => cmdline.modify(id, mods).await,
-            Ok(Args::Detail(id)) => cmdline.show_id(id).await,
+            Ok(Args::Detail(id)) => cmdline.detail(id).await,
             Ok(Args::Do(id, date, finished)) => cmdline.do_task(id, date, finished).await,
             Ok(Args::Help(cmd)) => detailed_help(cmd),
             Ok(Args::Quit) => break,
-            Err(e) => {
+            Err(_e) => {
                 match fallbackParser.parse(&cmd_raw) {
                     Ok(cmd) => detailed_help(Some(cmd)),
                     Err(e) => detailed_help(None)
@@ -53,6 +53,13 @@ async fn run() -> Result<(), TDError> {
             },
             _ => Ok(())
         };
+
+        match cmd_result {
+            Err(e) => {
+                println!("{}", e);
+            },
+            Ok(_r) => {}
+        }
     }
     Ok(())
 }
