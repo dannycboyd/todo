@@ -1,0 +1,184 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 11.5
+-- Dumped by pg_dump version 11.5
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Name: calschema; Type: SCHEMA; Schema: -; Owner: dannyboyd
+--
+
+CREATE SCHEMA calschema;
+
+
+ALTER SCHEMA calschema OWNER TO dannyboyd;
+
+SET default_tablespace = '';
+
+SET default_with_oids = false;
+
+--
+-- Name: task_completions; Type: TABLE; Schema: public; Owner: dannyboyd
+--
+
+CREATE TABLE public.task_completions (
+    id integer NOT NULL,
+    task_id integer NOT NULL,
+    date date
+);
+
+
+ALTER TABLE public.task_completions OWNER TO dannyboyd;
+
+--
+-- Name: task_completions_id_seq; Type: SEQUENCE; Schema: public; Owner: dannyboyd
+--
+
+CREATE SEQUENCE public.task_completions_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.task_completions_id_seq OWNER TO dannyboyd;
+
+--
+-- Name: task_completions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: dannyboyd
+--
+
+ALTER SEQUENCE public.task_completions_id_seq OWNED BY public.task_completions.id;
+
+
+--
+-- Name: tasks; Type: TABLE; Schema: public; Owner: dannyboyd
+--
+
+CREATE TABLE public.tasks (
+    id integer NOT NULL,
+    start date,
+    repeats character varying(7) DEFAULT 'n'::character varying,
+    title character varying(80) NOT NULL,
+    note character varying(1000),
+    finished boolean DEFAULT false,
+    CONSTRAINT check_repetition CHECK (((repeats)::text = ANY ((ARRAY['y'::character varying, 'm'::character varying, 'w'::character varying, 'd'::character varying, 'n'::character varying, 'e'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.tasks OWNER TO dannyboyd;
+
+--
+-- Name: tasks_id_seq; Type: SEQUENCE; Schema: public; Owner: dannyboyd
+--
+
+CREATE SEQUENCE public.tasks_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tasks_id_seq OWNER TO dannyboyd;
+
+--
+-- Name: tasks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: dannyboyd
+--
+
+ALTER SEQUENCE public.tasks_id_seq OWNED BY public.tasks.id;
+
+
+--
+-- Name: task_completions id; Type: DEFAULT; Schema: public; Owner: dannyboyd
+--
+
+ALTER TABLE ONLY public.task_completions ALTER COLUMN id SET DEFAULT nextval('public.task_completions_id_seq'::regclass);
+
+
+--
+-- Name: tasks id; Type: DEFAULT; Schema: public; Owner: dannyboyd
+--
+
+ALTER TABLE ONLY public.tasks ALTER COLUMN id SET DEFAULT nextval('public.tasks_id_seq'::regclass);
+
+
+--
+-- Data for Name: task_completions; Type: TABLE DATA; Schema: public; Owner: dannyboyd
+--
+
+COPY public.task_completions (id, task_id, date) FROM stdin;
+9	2	2019-12-24
+10	2	2019-12-25
+12	2	2019-12-26
+\.
+
+
+--
+-- Data for Name: tasks; Type: TABLE DATA; Schema: public; Owner: dannyboyd
+--
+
+COPY public.tasks (id, start, repeats, title, note, finished) FROM stdin;
+1	1995-10-16	y	My Birthday	It is my date of birth!	f
+3	2020-10-31	e	Halloween	This was a sad one	f
+9	2020-01-01	y	New Years Day	This is a test	f
+2	2019-12-25	y	Christmas	Vince Giraldi Music Time	t
+\.
+
+
+--
+-- Name: task_completions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: dannyboyd
+--
+
+SELECT pg_catalog.setval('public.task_completions_id_seq', 12, true);
+
+
+--
+-- Name: tasks_id_seq; Type: SEQUENCE SET; Schema: public; Owner: dannyboyd
+--
+
+SELECT pg_catalog.setval('public.tasks_id_seq', 15, true);
+
+
+--
+-- Name: task_completions task_complations_unique; Type: CONSTRAINT; Schema: public; Owner: dannyboyd
+--
+
+ALTER TABLE ONLY public.task_completions
+    ADD CONSTRAINT task_complations_unique UNIQUE (task_id, date);
+
+
+--
+-- Name: tasks tasks_pkey; Type: CONSTRAINT; Schema: public; Owner: dannyboyd
+--
+
+ALTER TABLE ONLY public.tasks
+    ADD CONSTRAINT tasks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: task_completions task_completions_task_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: dannyboyd
+--
+
+ALTER TABLE ONLY public.task_completions
+    ADD CONSTRAINT task_completions_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.tasks(id);
+
+
+--
+-- PostgreSQL database dump complete
+--
+
