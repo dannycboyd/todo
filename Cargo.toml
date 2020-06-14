@@ -9,16 +9,19 @@ build = "build.rs"
 lalrpop = "0.17.2"
 
 [dependencies]
-hyper = { version = "0.13.0-alpha.2", features = ["unstable-stream"] }
+hyper = { version = "0.13.0-alpha.2", features = ["unstable-stream"] } # 0.13.6
 url = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
-ansi_term = "0.9"
+ansi_term = "0.9" # are we even using this any more? maybe can just go
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
-lalrpop-util = "0.16.3"
+lalrpop-util = "0.16.3" # 1.19.0
 regex = "0.2.1"
-terminal_size = "0.1.8"
+terminal_size = "0.1.8" # do we use this?
 
-tokio-postgres = { version = "0.5.0-alpha.1", features = ["with-chrono-0_4"] }
-futures-preview = { version = "0.3.0-alpha.19", features = ["io-compat"] }
-tokio = "0.2.0-alpha.6"
+tokio-postgres = { version = "0.5.0-alpha.1", features = ["with-chrono-0_4"] } # stable at 0.5.4
+futures-preview = { version = "0.3.0-alpha.19", features = ["io-compat"] } # stable at 0.2.2
+tokio = "0.2.0-alpha.6" # 0.2.21
+
+diesel = { version = "1.4.4", features = ["postgres"] }
+dotenv = "0.15.0"

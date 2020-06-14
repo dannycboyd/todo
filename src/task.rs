@@ -49,6 +49,8 @@ impl Mods {
  * instead of the TaskItem struct/impl, since we don't need to address a memory object, we just need to open a db connection and query it.
  * 
  * OTOH, we do want a way to print the results, so keeping this class so that we can pull stuff from the DB and then print it out is good.
+ *
+ * Update 6/13 I'm not sure how it will change
  */
 impl TaskItem {
     pub unsafe fn new(start: NaiveDate, title: String, note: String, rep: Repetition) -> TaskItem {
@@ -90,8 +92,8 @@ impl TaskItem {
         for m in mods {
             match m {
                 Mods::Start(raw_start) => match cal::get_start(&raw_start.to_vec()) {
-                    Some(start) => self.start = start,
-                    None => println!("Can't make {:?} into a date!", raw_start),
+                    Ok(start) => self.start = start,
+                    Err(_) => println!("Can't make {:?} into a date!", raw_start),
                 },
                 Mods::Rep(rep) => self.repetition = rep,
                 Mods::Title(title) => self.title = title,
@@ -144,11 +146,6 @@ impl TaskItem {
     pub async fn get(client: &tokio_postgres::Client, id: i32) -> Result<TaskItem, TDError> {
         let stmt = client.prepare("SELECT * FROM tasks WHERE id = $1").await?;
         let rows = client.query(&stmt, &[&id]).await?;
-        // .iter();
-
-        // if rows.len() > 0 {
-        //     return from_row(rows.next().unwrap())
-        // }
 
         for row in rows {
             return from_row(row)

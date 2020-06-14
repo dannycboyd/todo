@@ -1,4 +1,4 @@
-#![feature(async_closure)]
+// #![feature(async_closure)]
 
 extern crate chrono;
 extern crate to_do;
@@ -35,31 +35,32 @@ fn from_row(row: Row) -> Result<TaskItem, TDError> {
     Ok(TaskItem::new_by_id(id, date, title.to_string(), note.to_string(), rep, finished))
 }
 
-async fn delete_task(client: tokio_postgres::Client, uri: String) -> Response<Body> {
-    let do_delete = async || -> Result<String, TDError> {
-        println!("{}", uri);
-        let params = Url::parse(&uri)?;
-        println!("{:?}", params);
-        let params = params.query_pairs();
-    
-        let mut id: i32 = 0;
-        for param in params {
-            println!("{:?}", param);
-            if param.0 == "id" {
-                id = param.1.to_string().parse::<i32>()?;
-                break;
-            }
-        }
-        if id == 0 {
-            return Err(TDError::NoneError);
-        }
-        // let foo = format!("DELETE FROM tasks WHERE id = {}", id);
-        let stmt = client.prepare("DELETE FROM tasks WHERE id = $1").await?;
-        client.query(&stmt, &[&id]).await?;
+async fn do_delete(client: tokio_postgres::Client, uri: &str) -> Result<String, TDError> {
+    println!("{}", uri);
+    let params = Url::parse(uri)?;
+    println!("{:?}", params);
+    let params = params.query_pairs();
 
-        Ok(String::from("Successfully deleted the task"))
-    };
-    match do_delete().await {
+    let mut id: i32 = 0;
+    for param in params {
+        println!("{:?}", param);
+        if param.0 == "id" {
+            id = param.1.to_string().parse::<i32>()?;
+            break;
+        }
+    }
+    if id == 0 {
+        return Err(TDError::NoneError);
+    }
+    // let foo = format!("DELETE FROM tasks WHERE id = {}", id);
+    let stmt = client.prepare("DELETE FROM tasks WHERE id = $1").await?;
+    client.query(&stmt, &[&id]).await?;
+
+Ok(String::from("Successfully deleted the task"))
+}
+
+async fn delete_task(client: tokio_postgres::Client, uri: String) -> Response<Body> {
+    match do_delete(client, &uri).await {
         Ok(response) => Response::new(Body::from(response)),
         Err(TDError::ParseError(v)) => {
             Response::builder()

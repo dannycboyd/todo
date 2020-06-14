@@ -1,5 +1,5 @@
 
-#![feature(try_trait, async_closure)]
+// #![feature(try_trait, async_closure)]
 
 use std::env;
 pub mod cal;
@@ -89,11 +89,11 @@ impl From<std::string::FromUtf8Error> for TDError {
   }
 }
 
-impl From<std::option::NoneError> for TDError {
-  fn from (_error: std::option::NoneError) -> Self {
-    TDError::NoneError
-  }
-}
+// impl From<std::option::NoneError> for TDError {
+//   fn from (_error: std::option::NoneError) -> Self {
+//     TDError::NoneError
+//   }
+// }
 
 impl From<url::ParseError> for TDError {
   fn from (error: url::ParseError) -> Self {
