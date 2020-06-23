@@ -50,7 +50,7 @@ pub fn basic_help() {
 }
 
 // may be worthwhile to make the recognized commands into an enum? they're written separately multiple places
-pub fn detailed_help(cmd: Option<String>) -> Result<(), TDError> {
+pub fn detailed_help(cmd: Option<String>) {
   match cmd {
     Some(cmd) => {
       match cmd.as_ref() { // fix this mess so it does a boilerplate "usage: {}", cmd_help() sort of thing
@@ -67,6 +67,5 @@ pub fn detailed_help(cmd: Option<String>) -> Result<(), TDError> {
     },
     None => basic_help()
   }
-  Ok(())
 }
 

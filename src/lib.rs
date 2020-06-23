@@ -1,7 +1,6 @@
 
 // #![feature(try_trait, async_closure)]
-
-use std::env;
+use std::{env, fmt};
 pub mod cal;
 pub mod parser_cmd;
 pub mod async_direct_cmd;
@@ -20,6 +19,19 @@ use url;
 
 use tokio_postgres::Row;
 
+// diesel schemas
+#[macro_use]
+extern crate diesel;
+extern crate dotenv;
+
+use diesel::prelude::*;
+use diesel::pg::PgConnection;
+use dotenv::dotenv;
+// use std::env;
+
+pub mod schema;
+pub mod models;
+
 #[derive(Debug)]
 pub enum TDError {
     IOError(String),
@@ -27,6 +39,7 @@ pub enum TDError {
     PostgresError(String),
     HyperError(String),
     VarError(String),
+    ConnectionError(String),
     NoneError,
     SerializeError,
     Quit,
@@ -41,10 +54,11 @@ impl std::error::Error for TDError {
 impl std::fmt::Display for TDError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     let value = match self {
-      Self::IOError(v)
+      Self::IOError(v) // replace this with a wildcard
         | Self::ParseError(v)
         | Self::PostgresError(v)
         | Self::VarError(v)
+        | Self::ConnectionError(v)
         | Self::HyperError(v) => v,
       Self::NoneError => "'None' tried to unwrap!",
       Self::SerializeError => "Serde couldn't serialize",
@@ -116,6 +130,13 @@ impl From<std::env::VarError> for TDError {
   }
 }
 
+impl From<diesel::result::Error> for TDError {
+  fn from (error: diesel::result::Error) -> Self {
+    let value = format!("{}", error);
+    TDError::ConnectionError(value)
+  }
+}
+
 fn from_row(row: Row) -> Result<TaskItem, TDError> {
   let id: i32 = row.try_get(0)?;
   let date: NaiveDate = row.try_get("start")?;
@@ -130,9 +151,14 @@ fn from_row(row: Row) -> Result<TaskItem, TDError> {
   Ok(TaskItem::new_by_id(id, date, title.to_string(), note.to_string(), rep, finished))
 }
 
-// pub trait TDInsert<T> {
-//   fn insert(&self) -> Result<T, TDError>;
-// }
+pub fn establish_connection() -> PgConnection {
+  dotenv().ok();
+
+  let database_url = env::var("DATABASE_URL")
+      .expect("DATABASE_URL must be set");
+  PgConnection::establish(&database_url)
+      .expect(&format!("Error connecting to {}", database_url))
+}
 
 pub fn connection_info() -> Result<String, TDError> {
 
@@ -182,4 +208,15 @@ pub fn connection_info() -> Result<String, TDError> {
     db_string.push_str(&dbhost);
   }
   Ok(db_string)
+}
+
+pub trait TaskLike {
+  fn get_date(&self) -> NaiveDate;
+
+  fn get_rep(&self) -> Repetition;
+
+  fn is_finished(&self) -> bool;
+  fn get_last_completed(&self) -> Option<&NaiveDate>;
+
+  fn to_string(&self) -> String;
 }

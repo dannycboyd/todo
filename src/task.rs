@@ -180,6 +180,29 @@ impl TaskItem {
     }
 }
 
+impl super::TaskLike for TaskItem {
+    fn get_date(&self) -> NaiveDate {
+        self.start
+    }
+
+    fn get_rep(&self) -> Repetition {
+        self.repetition
+    }
+
+    fn is_finished(&self) -> bool {
+        self.finished
+    }
+
+    fn get_last_completed(&self) -> Option<&NaiveDate> {
+        self.completed.last()
+    }
+
+    fn to_string(&self) -> String {
+        String::from(format!("{}", self))
+    }
+
+}
+
 impl fmt::Display for TaskItem {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} - {}: {}, {rep}\nNotes: {note}\nFinished: {finished}",

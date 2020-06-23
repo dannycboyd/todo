@@ -4,10 +4,13 @@ use futures::{FutureExt};
 
 use tokio_postgres::{NoTls};
 use tokio_postgres;
-use chrono::NaiveDate;
+// use chrono::NaiveDate;
 
 use super::task::{ TaskItem, RawTaskItem, Mods };
-use super::{cal, TDError, from_row};
+use super::{cal, TDError, from_row, establish_connection};
+
+use diesel::PgConnection;
+use super::models::Task;
 
 #[derive(Debug)]
 pub enum Args {
@@ -27,6 +30,7 @@ pub struct AsyncCmd {
     // storage: Vec<TaskItem>,
     // connection: String,
     client: tokio_postgres::Client,
+    connection: PgConnection
 }
 
 /**
@@ -41,13 +45,14 @@ pub struct AsyncCmd {
 impl AsyncCmd {
     pub async fn new(conn_info: &str) -> Result<Self, TDError> {
         let (client, connection) = tokio_postgres::connect(conn_info, NoTls).await?;
+        let conn = establish_connection();
         let connection = connection.map(|r| {
           if let Err(e) = r {
             eprintln!("Connection error: {}", e)
           }
         });
         tokio::spawn(connection);
-        let me = Self { client: client };
+        let me = Self { client: client, connection: conn };
         Ok(me)
     }
 
@@ -62,72 +67,84 @@ impl AsyncCmd {
      * 
      */
 
-    #[allow(dead_code)]
-    async fn task_by_id(&self, id: i32) -> Result<TaskItem, TDError> {
-      let filters = vec![(String::from("id"), String::from("="), format!("{}", id))];
-      let tasks = self.get_tasks_by(filters).await?;
-      match tasks.first() {
-        Some(t) => Ok(t.clone()),
-        None => Err(TDError::NoneError)
-      }
-    }
+    // #[allow(dead_code)]
+    // async fn task_by_id(&self, id: i32) -> Result<TaskItem, TDError> {
+    //   let filters = vec![(String::from("id"), String::from("="), format!("{}", id))];
+    //   let tasks = self.get_tasks_by(filters).await?;
+    //   match tasks.first() {
+    //     Some(t) => Ok(t.clone()),
+    //     None => Err(TDError::NoneError)
+    //   }
+    // }
 
-    #[allow(dead_code)]
-    async fn get_tasks_by(&self, filters: Vec<(String, String, String)>) -> Result<Vec<TaskItem>, TDError> {
-      let mut query = String::from("SELECT * FROM tasks ");
-      for (index, filter) in filters.iter().enumerate() {
+    // #[allow(dead_code)]
+    // async fn get_tasks_by(&self, filters: Vec<(String, String, String)>) -> Result<Vec<TaskItem>, TDError> {
+    //   let mut query = String::from("SELECT * FROM tasks ");
+    //   for (index, filter) in filters.iter().enumerate() {
 
-        let join = match index {
-          0 => "where",
-          _ => "and"
-        };
-        query.push_str(&format!("{} {} {} {}", join, filter.0, filter.1, filter.2))
-      };
+    //     let join = match index {
+    //       0 => "where",
+    //       _ => "and"
+    //     };
+    //     query.push_str(&format!("{} {} {} {}", join, filter.0, filter.1, filter.2))
+    //   };
 
 
-      let rows = self.client.query(query.as_str(), &[]).await?;
-      let mut ret: Vec<TaskItem> = vec![];
-      for row in rows {
-        match from_row(row) {
-          Ok(item) => ret.push(item),
-          Err(e) => eprintln!("An error trying to parse task: {}", e)
-        }
-      }
-      Ok(ret)
-    }
+    //   let rows = self.client.query(query.as_str(), &[]).await?;
+    //   let mut ret: Vec<TaskItem> = vec![];
+    //   for row in rows {
+    //     match from_row(row) {
+    //       Ok(item) => ret.push(item),
+    //       Err(e) => eprintln!("An error trying to parse task: {}", e)
+    //     }
+    //   }
+    //   Ok(ret)
+    // }
 
     pub async fn show(&self, kind: cal::Repetition, date_raw: Option<Vec<u32>>) -> Result<(), TDError> {
-      let rows = TaskItem::get_all(&self.client).await?;
-      let start = cal::date_or_today(date_raw);
-      Ok(cal::show_type(kind, start, &rows))
+      use super::schema::tasks::dsl::*;
+      use diesel::prelude::*;
+
+      let rows = tasks.load::<Task>(&self.connection)?;
+      // let task_items = vec![];
+      // for taskraw in rows {
+        // need a conversion between the old TaskItem class and the newer task model. Which one do we want to be the canonical? Will they be different? idk
+        // maybe the db model can exist on the other class?
+      // }
+      let start_date = cal::date_or_today(date_raw);
+      Ok(cal::show_type(kind, start_date, rows))
     }
 
-    pub async fn detail(&self, id: i32) -> Result<(), TDError> {
-      let task = TaskItem::get(&self.client, id).await?;
-      println!("{}", task);
+    pub async fn detail(&self, search_id: i32) -> Result<(), TDError> {
+      use super::schema::tasks::dsl::*;
+      use diesel::prelude::*;
+      use super::models::Completion;
 
-      let dates = TaskItem::get_completions(&self.client, id).await?;
-      for date in dates {
-        println!("{}", date)
+      let found_task = tasks.filter(id.eq(search_id))
+        .limit(1)
+        .load::<Task>(&self.connection)?;
+      let found_completions: Vec<Completion> = Completion::belonging_to(&found_task)
+        .load(&self.connection)?;
+      
+      if found_task.len() > 0 {
+        println!("{}", found_task[0]);
+  
+        // let dates = TaskItem::get_completions(&self.client, id).await?;
+        for completion in found_completions {
+          println!("{}", completion.get_date())
+        }
       }
       Ok(())
     }
 
     pub async fn list_all(&self) -> Result<(), TDError> {
-      let stmt = self.client.prepare("SELECT * FROM tasks").await?;
-      let rows = self.client
-        .query(&stmt, &[])
-        .await?;
+      use super::schema::tasks::dsl::*;
+      use diesel::prelude::*;
 
-      for row in rows {
-        match from_row(row) {
-          Ok(item) => {
-            println!("{}\n", item);
-          },
-          Err(e) => {
-            eprintln!("An error occurred: {}", e);
-          }
-        }
+      let all_tasks = tasks.load::<Task>(&self.connection)?;
+
+      for found_task in all_tasks {
+        println!("{}\n", found_task.to_string())
       }
       Ok(())
 

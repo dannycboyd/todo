@@ -66,7 +66,7 @@ impl Cmd {
 
     pub fn show(&self, kind: cal::Repetition, date_raw: Option<Vec<u32>>) {
         let start = cal::date_or_today(date_raw);
-        cal::show_type(kind, start, &self.storage);
+        // cal::show_type(kind, start, self.storage); // This whole file should probably go away
     }
 
     pub fn list_all(&self) {

@@ -11,10 +11,9 @@ use std::str::FromStr;
 use ansi_term::Style;
 use ansi_term::Color::{Yellow};
 
-use crate::task::TaskItem;
-use super::TDError;
+use super::{TDError, TaskLike};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub enum Repetition {
     Never,
     Daily,
@@ -75,6 +74,9 @@ fn print_weekdays() {
     println!("Su Mo Tu We Th Fr Sa");
 }
 
+/**
+ * Returns Opt<NaiveDate> of the sunday immediately before the provided NaiveDate
+ */
 fn get_prev_sunday(date: NaiveDate) -> Option<NaiveDate> {
     let num_days = date.weekday().num_days_from_sunday();
     if num_days == 0 {
@@ -85,6 +87,9 @@ fn get_prev_sunday(date: NaiveDate) -> Option<NaiveDate> {
     }
 }
 
+/**
+ * Returns Opt<NaiveDate> of the 1st of the month after the one in the provided NaiveDate
+ */
 fn next_month(date: &NaiveDate) -> Option<NaiveDate> {
     let mut year = date.year();
     let mut month = date.month();
@@ -98,11 +103,11 @@ fn next_month(date: &NaiveDate) -> Option<NaiveDate> {
     NaiveDate::from_ymd_opt(year, month, 1)
 }
 
-pub fn task_on_day(task: &TaskItem, check: NaiveDate) -> bool {
-    let start = task.start;
-    let rep = &task.repetition;
-    if task.finished {
-        let last_day = task.completed.last().unwrap();
+pub fn task_on_day(task: &impl TaskLike, check: NaiveDate) -> bool {
+    let start = task.get_date();
+    let rep = &task.get_rep();
+    if task.is_finished() {
+        let last_day = task.get_last_completed().unwrap();
         if last_day < &check { return false }
     }
     match rep {
@@ -114,18 +119,18 @@ pub fn task_on_day(task: &TaskItem, check: NaiveDate) -> bool {
     }
 }
 
-pub fn show_day_for_task(task: &TaskItem, check: NaiveDate) -> Occurrence {
-    if task.done_on_day(check) {
-        Occurrence::Done
-    } else {
-        match task_on_day(task, check) {
-            true => Occurrence::Todo,
-            false => Occurrence::Nah
-        }
-    }
-}
+// pub fn show_day_for_task(task: &TaskItem, check: NaiveDate) -> Occurrence {
+//     if task.done_on_day(check) {
+//         Occurrence::Done
+//     } else {
+//         match task_on_day(task, check) {
+//             true => Occurrence::Todo,
+//             false => Occurrence::Nah
+//         }
+//     }
+// }
 
-pub fn show_type(kind: Repetition, start: NaiveDate, tasks: &Vec<TaskItem>) {
+pub fn show_type(kind: Repetition, start: NaiveDate, tasks: Vec<impl TaskLike>) {
     match kind {
         Repetition::Never => (),
         Repetition::Daily => (),
@@ -135,7 +140,7 @@ pub fn show_type(kind: Repetition, start: NaiveDate, tasks: &Vec<TaskItem>) {
     }
 }
 
-pub fn print_month(date: NaiveDate, tasks: &Vec<TaskItem>) {
+pub fn print_month(date: NaiveDate, tasks: Vec<impl TaskLike>) {
     let year = date.year();
     let month = date.month();
     let current_month = NaiveDate::from_ymd(year, month, 1);
@@ -159,7 +164,7 @@ pub fn print_month(date: NaiveDate, tasks: &Vec<TaskItem>) {
         first = (first + 1) % 7;
         let mut occurs = false;
         for t in tasks.iter() {
-            if task_on_day(&t, NaiveDate::from_ymd(year, month, i as u32)) {
+            if task_on_day(t, NaiveDate::from_ymd(year, month, i as u32)) {
                 occurs = true;
                 break;
             }
@@ -179,11 +184,11 @@ pub fn print_month(date: NaiveDate, tasks: &Vec<TaskItem>) {
     println!()
 }
 
-pub fn print_week(date: NaiveDate, tasks: &Vec<TaskItem>) {
+pub fn print_week(date: NaiveDate, tasks: Vec<impl TaskLike>) {
     match get_prev_sunday(date) {
         None => println!("can't handle date: {:?}", date),
         Some(start) => {
-            let mut happening: Vec<(u32, &TaskItem)> = vec![];
+            let mut happening: Vec<(u32, String)> = vec![];
             let mut year = start.year();
             let mut month = start.month();
             let mut day: i64 = start.day() as i64;
@@ -191,18 +196,21 @@ pub fn print_week(date: NaiveDate, tasks: &Vec<TaskItem>) {
             match next_month(&start) {
                 None => println!("something went wrong checking the length of month: {:?}", start),
                 Some(next) => {
+                    // get the next month so we know if we roll over
                     let length = next.signed_duration_since(NaiveDate::from_ymd(start.year(), start.month(), 1)).num_days();
                     print_weekdays();
                     for i in 0..7 {
+                        // if we walk out of the current month, display the next one (with 1, 2, etc)
                         if day + i == length + 1 {
                             year = next.year();
                             month = next.month();
                             day = 1 - i;
                         }
+                        // check if anything is happening today
                         let mut occurs = false;
-                        for t in tasks.iter() {
-                            if task_on_day(&t, NaiveDate::from_ymd(year, month, (day + i) as u32)) {
-                                happening.push(((day + i) as u32, t));
+                        for t in &tasks {
+                            if task_on_day(t, NaiveDate::from_ymd(year, month, (day + i) as u32)) {
+                                happening.push(((day + i) as u32, t.to_string()));
                                 occurs = true;
                             }
                         }
@@ -213,11 +221,11 @@ pub fn print_week(date: NaiveDate, tasks: &Vec<TaskItem>) {
                     }
                     println!();
                     let mut day: u32 = 0;
-                    for (i, t) in happening.iter() {
+                    for (i, task_string) in happening.iter() {
                         if *i == day {
-                            println!("    {}", t);
+                            println!("    {}", task_string);
                         } else {
-                            println!("{:>2}: {}", i, t.to_string());
+                            println!("{:>2}: {}", i, task_string);
                             day = *i;
                         }
                     }
@@ -231,7 +239,7 @@ fn next_year(date: &NaiveDate) -> Option<NaiveDate> {
     NaiveDate::from_yo_opt(date.year() + 1, 1)
 }
 
-pub fn print_year(start: NaiveDate, tasks: &Vec<TaskItem>) {
+pub fn print_year(start: NaiveDate, tasks: Vec<impl TaskLike>) {
     let year = start.year();
     match next_year(&start) {
         None => println!("Something went wrong trying to get the next year"),
@@ -242,7 +250,7 @@ pub fn print_year(start: NaiveDate, tasks: &Vec<TaskItem>) {
             for i in 1..length {
                 let mut occurs = false;
                 for t in tasks.iter() {
-                    if task_on_day(&t, NaiveDate::from_yo(year, i)) {
+                    if task_on_day(t, NaiveDate::from_yo(year, i)) {
                         occurs = true;
                     }
                 }

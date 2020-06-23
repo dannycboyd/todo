@@ -13,21 +13,21 @@ fn read(cmd_raw: &mut String) -> CmdResult<usize> {
     Ok(len)
 }
 
-fn parse(parser: &task_item::CmdParser, cmd_raw: &str) -> CmdResult<Args> {
-    parser.parse(cmd_raw)
-        .or_else(|err| {
-            let foo = format!("{}", err);
-            Err(TDError::ParseError(foo))
-        })
-}
+// fn parse(parser: &task_item::CmdParser, cmd_raw: &str) -> CmdResult<Args> {
+//     parser.parse(cmd_raw)
+//         .or_else(|err| {
+//             let foo = format!("{}", err);
+//             Err(TDError::ParseError(foo))
+//         })
+// }
+
+extern crate dotenv;
 
 async fn run() -> Result<(), TDError> {
-
     let db_string = connection_info()?;
-    println!("{:?}", db_string);
 
     let parser = task_item::CmdParser::new();
-    let fallbackParser = task_item::RecoveryParser::new();
+    let fallback_parser = task_item::RecoveryParser::new();
     let cmdline = AsyncCmd::new(&db_string).await?;
 
     loop {
@@ -42,18 +42,19 @@ async fn run() -> Result<(), TDError> {
             Ok(Args::Mods(id, mods)) => cmdline.modify(id, mods).await,
             Ok(Args::Detail(id)) => cmdline.detail(id).await,
             Ok(Args::Do(id, date, finished)) => cmdline.do_task(id, date, finished).await,
-            Ok(Args::Help(cmd)) => detailed_help(cmd),
+            Ok(Args::Help(cmd)) => Ok(detailed_help(cmd)),
             Ok(Args::Quit) => break,
             Err(_e) => {
-                match fallbackParser.parse(&cmd_raw) {
+                match fallback_parser.parse(&cmd_raw) {
                     Ok(cmd) => detailed_help(Some(cmd)),
-                    Err(e) => detailed_help(None)
+                    Err(_) => detailed_help(None)
                 };
                 Ok(())
             },
             _ => Ok(())
         };
 
+        // handles error inside the above
         match cmd_result {
             Err(e) => {
                 println!("{}", e);
