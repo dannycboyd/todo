@@ -2,8 +2,6 @@
  * Help file. Should be updated every time the task_item.lalrpop file is updated, if necessary
  */
 
-use super::TDError;
-
 fn date_parts() -> String {
   String::from("d | mm-dd | mm-dd-yyyy") // this is confusing/conflicts with rep_parts
 }

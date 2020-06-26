@@ -3,7 +3,7 @@ extern crate chrono;
 
 extern crate to_do;
 use to_do::async_direct_cmd::{AsyncCmd, Args};
-use to_do::{task_item, TDError, connection_info};
+use to_do::{task_item, TDError};
 use to_do::parser_help::detailed_help;
 
 type CmdResult<T> = std::result::Result<T, TDError>;
@@ -13,19 +13,9 @@ fn read(cmd_raw: &mut String) -> CmdResult<usize> {
     Ok(len)
 }
 
-// fn parse(parser: &task_item::CmdParser, cmd_raw: &str) -> CmdResult<Args> {
-//     parser.parse(cmd_raw)
-//         .or_else(|err| {
-//             let foo = format!("{}", err);
-//             Err(TDError::ParseError(foo))
-//         })
-// }
-
 extern crate dotenv;
 
 fn run() -> Result<(), TDError> {
-    // let db_string = connection_info()?;
-    // println!("{:?}", db_string);
 
     let parser = task_item::CmdParser::new();
     let fallback_parser = task_item::RecoveryParser::new();
