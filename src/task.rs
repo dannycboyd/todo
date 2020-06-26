@@ -20,14 +20,14 @@ pub struct TaskItem {
 }
 
 #[derive(Debug)]
-pub enum Mods {
+pub enum Mod {
     Start(Vec<u32>),
     Rep(cal::Repetition),
     Title(String),
     Note(String),
 }
 
-impl Mods {
+impl Mod {
     pub fn to_sql(&self) -> Result<String, TDError> {
         Ok(match self {
             Self::Start(date_raw) => {
@@ -88,16 +88,16 @@ impl TaskItem {
     //     Some(task)
     // }
 
-    pub fn apply_modifications(&mut self, mods: Vec<Mods>) {
+    pub fn apply_modifications(&mut self, mods: Vec<Mod>) {
         for m in mods {
             match m {
-                Mods::Start(raw_start) => match cal::get_start(&raw_start.to_vec()) {
+                Mod::Start(raw_start) => match cal::get_start(&raw_start.to_vec()) {
                     Ok(start) => self.start = start,
                     Err(_) => println!("Can't make {:?} into a date!", raw_start),
                 },
-                Mods::Rep(rep) => self.repetition = rep,
-                Mods::Title(title) => self.title = title,
-                Mods::Note(note) => self.note = note,
+                Mod::Rep(rep) => self.repetition = rep,
+                Mod::Title(title) => self.title = title,
+                Mod::Note(note) => self.note = note,
             }
         }
     }
@@ -200,7 +200,6 @@ impl super::TaskLike for TaskItem {
     fn to_string(&self) -> String {
         String::from(format!("{}", self))
     }
-
 }
 
 impl fmt::Display for TaskItem {

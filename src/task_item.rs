@@ -1,7 +1,7 @@
 // auto-generated: "lalrpop 0.17.2"
-// sha256: 3d13881aefcbdb433cc5d798d3e4ffe59a8c4f6328e2e39147efc87679b8ded
+// sha256: 5eb8ea4ddb14fe5d4d44a08560f5e58bd7c34aeb483357fccf790d2602bf2
 use std::str::FromStr;
-use crate::task::{RawTaskItem, Mods};
+use crate::task::{RawTaskItem, Mod};
 use crate::cal::Repetition;
 use crate::async_direct_cmd::{Args};
 #[allow(unused_extern_crates)]
@@ -14,7 +14,7 @@ mod __parse__Cmd {
     #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens)]
 
     use std::str::FromStr;
-    use crate::task::{RawTaskItem, Mods};
+    use crate::task::{RawTaskItem, Mod};
     use crate::cal::Repetition;
     use crate::async_direct_cmd::{Args};
     #[allow(unused_extern_crates)]
@@ -34,7 +34,7 @@ mod __parse__Cmd {
         Variant6(::std::option::Option<String>),
         Variant7(Vec<u32>),
         Variant8(::std::option::Option<Vec<u32>>),
-        Variant9(Vec<Mods>),
+        Variant9(Vec<Mod>),
         Variant10(i32),
         Variant11((Repetition, Option<Vec<u32>>)),
         Variant12(RawTaskItem),
@@ -1785,7 +1785,7 @@ mod __parse__Cmd {
       'input,
     >(
         __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, Vec<Mods>, usize)
+    ) -> (usize, Vec<Mod>, usize)
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant9(__v), __r) => (__l, __v, __r),
@@ -3600,7 +3600,7 @@ mod __parse__Date {
     #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens)]
 
     use std::str::FromStr;
-    use crate::task::{RawTaskItem, Mods};
+    use crate::task::{RawTaskItem, Mod};
     use crate::cal::Repetition;
     use crate::async_direct_cmd::{Args};
     #[allow(unused_extern_crates)]
@@ -3620,7 +3620,7 @@ mod __parse__Date {
         Variant6(::std::option::Option<String>),
         Variant7(Vec<u32>),
         Variant8(::std::option::Option<Vec<u32>>),
-        Variant9(Vec<Mods>),
+        Variant9(Vec<Mod>),
         Variant10(i32),
         Variant11((Repetition, Option<Vec<u32>>)),
         Variant12(RawTaskItem),
@@ -4939,7 +4939,7 @@ mod __parse__Date {
       'input,
     >(
         __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, Vec<Mods>, usize)
+    ) -> (usize, Vec<Mod>, usize)
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant9(__v), __r) => (__l, __v, __r),
@@ -6754,7 +6754,7 @@ mod __parse__Period {
     #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens)]
 
     use std::str::FromStr;
-    use crate::task::{RawTaskItem, Mods};
+    use crate::task::{RawTaskItem, Mod};
     use crate::cal::Repetition;
     use crate::async_direct_cmd::{Args};
     #[allow(unused_extern_crates)]
@@ -6774,7 +6774,7 @@ mod __parse__Period {
         Variant6(::std::option::Option<String>),
         Variant7(Vec<u32>),
         Variant8(::std::option::Option<Vec<u32>>),
-        Variant9(Vec<Mods>),
+        Variant9(Vec<Mod>),
         Variant10(i32),
         Variant11((Repetition, Option<Vec<u32>>)),
         Variant12(RawTaskItem),
@@ -8165,7 +8165,7 @@ mod __parse__Period {
       'input,
     >(
         __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, Vec<Mods>, usize)
+    ) -> (usize, Vec<Mod>, usize)
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant9(__v), __r) => (__l, __v, __r),
@@ -9980,7 +9980,7 @@ mod __parse__Recovery {
     #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens)]
 
     use std::str::FromStr;
-    use crate::task::{RawTaskItem, Mods};
+    use crate::task::{RawTaskItem, Mod};
     use crate::cal::Repetition;
     use crate::async_direct_cmd::{Args};
     #[allow(unused_extern_crates)]
@@ -10000,7 +10000,7 @@ mod __parse__Recovery {
         Variant6(::std::option::Option<String>),
         Variant7(Vec<u32>),
         Variant8(::std::option::Option<Vec<u32>>),
-        Variant9(Vec<Mods>),
+        Variant9(Vec<Mod>),
         Variant10(i32),
         Variant11((Repetition, Option<Vec<u32>>)),
         Variant12(RawTaskItem),
@@ -11355,7 +11355,7 @@ mod __parse__Recovery {
       'input,
     >(
         __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, Vec<Mods>, usize)
+    ) -> (usize, Vec<Mod>, usize)
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant9(__v), __r) => (__l, __v, __r),
@@ -13170,7 +13170,7 @@ mod __parse__Repeats {
     #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens)]
 
     use std::str::FromStr;
-    use crate::task::{RawTaskItem, Mods};
+    use crate::task::{RawTaskItem, Mod};
     use crate::cal::Repetition;
     use crate::async_direct_cmd::{Args};
     #[allow(unused_extern_crates)]
@@ -13190,7 +13190,7 @@ mod __parse__Repeats {
         Variant6(::std::option::Option<String>),
         Variant7(Vec<u32>),
         Variant8(::std::option::Option<Vec<u32>>),
-        Variant9(Vec<Mods>),
+        Variant9(Vec<Mod>),
         Variant10(i32),
         Variant11((Repetition, Option<Vec<u32>>)),
         Variant12(RawTaskItem),
@@ -14527,7 +14527,7 @@ mod __parse__Repeats {
       'input,
     >(
         __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, Vec<Mods>, usize)
+    ) -> (usize, Vec<Mod>, usize)
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant9(__v), __r) => (__l, __v, __r),
@@ -16342,7 +16342,7 @@ mod __parse__Words {
     #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens)]
 
     use std::str::FromStr;
-    use crate::task::{RawTaskItem, Mods};
+    use crate::task::{RawTaskItem, Mod};
     use crate::cal::Repetition;
     use crate::async_direct_cmd::{Args};
     #[allow(unused_extern_crates)]
@@ -16362,7 +16362,7 @@ mod __parse__Words {
         Variant6(::std::option::Option<String>),
         Variant7(Vec<u32>),
         Variant8(::std::option::Option<Vec<u32>>),
-        Variant9(Vec<Mods>),
+        Variant9(Vec<Mod>),
         Variant10(i32),
         Variant11((Repetition, Option<Vec<u32>>)),
         Variant12(RawTaskItem),
@@ -17675,7 +17675,7 @@ mod __parse__Words {
       'input,
     >(
         __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, Vec<Mods>, usize)
+    ) -> (usize, Vec<Mod>, usize)
      {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Variant9(__v), __r) => (__l, __v, __r),
@@ -19488,7 +19488,7 @@ pub use self::__parse__Words::WordsParser;
 mod __intern_token {
     #![allow(unused_imports)]
     use std::str::FromStr;
-    use crate::task::{RawTaskItem, Mods};
+    use crate::task::{RawTaskItem, Mod};
     use crate::cal::Repetition;
     use crate::async_direct_cmd::{Args};
     #[allow(unused_extern_crates)]
@@ -20192,11 +20192,11 @@ fn __action47<
     'input,
 >(
     input: &'input str,
-    (_, mods, _): (usize, Vec<Mods>, usize),
+    (_, modification, _): (usize, Vec<Mod>, usize),
     (_, start, _): (usize, Vec<u32>, usize),
-) -> Vec<Mods>
+) -> Vec<Mod>
 {
-    { let mut mods = mods; mods.push(Mods::Start(start)); mods }
+    { let mut modification = modification; modification.push(Mod::Start(start)); modification }
 }
 
 #[allow(unused_variables)]
@@ -20204,11 +20204,11 @@ fn __action48<
     'input,
 >(
     input: &'input str,
-    (_, mods, _): (usize, Vec<Mods>, usize),
+    (_, modification, _): (usize, Vec<Mod>, usize),
     (_, rep, _): (usize, Repetition, usize),
-) -> Vec<Mods>
+) -> Vec<Mod>
 {
-    { let mut mods = mods; mods.push(Mods::Rep(rep)); mods }
+    { let mut modification = modification; modification.push(Mod::Rep(rep)); modification }
 }
 
 #[allow(unused_variables)]
@@ -20216,12 +20216,12 @@ fn __action49<
     'input,
 >(
     input: &'input str,
-    (_, mods, _): (usize, Vec<Mods>, usize),
+    (_, modification, _): (usize, Vec<Mod>, usize),
     (_, _, _): (usize, &'input str, usize),
     (_, title, _): (usize, String, usize),
-) -> Vec<Mods>
+) -> Vec<Mod>
 {
-    { let mut mods = mods; mods.push(Mods::Title(title)); mods }
+    { let mut modification = modification; modification.push(Mod::Title(title)); modification }
 }
 
 #[allow(unused_variables)]
@@ -20229,12 +20229,12 @@ fn __action50<
     'input,
 >(
     input: &'input str,
-    (_, mods, _): (usize, Vec<Mods>, usize),
+    (_, modification, _): (usize, Vec<Mod>, usize),
     (_, _, _): (usize, &'input str, usize),
     (_, note, _): (usize, String, usize),
-) -> Vec<Mods>
+) -> Vec<Mod>
 {
-    { let mut mods = mods; mods.push(Mods::Note(note)); mods }
+    { let mut modification = modification; modification.push(Mod::Note(note)); modification }
 }
 
 #[allow(unused_variables)]
@@ -20243,7 +20243,7 @@ fn __action51<
 >(
     input: &'input str,
     (_, __0, _): (usize, (), usize),
-) -> Vec<Mods>
+) -> Vec<Mod>
 {
     { vec![] }
 }
@@ -20378,7 +20378,7 @@ fn __action63<
     input: &'input str,
     (_, _, _): (usize, &'input str, usize),
     (_, id, _): (usize, i32, usize),
-    (_, modifs, _): (usize, Vec<Mods>, usize),
+    (_, modifs, _): (usize, Vec<Mod>, usize),
 ) -> Args
 {
     { Args::Mods(id, modifs) }
@@ -20630,7 +20630,7 @@ fn __action83<
     input: &'input str,
     __lookbehind: &usize,
     __lookahead: &usize,
-) -> Vec<Mods>
+) -> Vec<Mod>
 {
     let __start0 = __lookbehind.clone();
     let __end0 = __lookahead.clone();

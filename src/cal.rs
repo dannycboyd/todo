@@ -11,6 +11,7 @@ use std::str::FromStr;
 use ansi_term::Style;
 use ansi_term::Color::{Yellow};
 
+// use crate::task::TaskItem;
 use super::{TDError, TaskLike};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
@@ -118,17 +119,6 @@ pub fn task_on_day(task: &impl TaskLike, check: NaiveDate) -> bool {
         Repetition::Yearly => start <= check && start.day() == check.day() && start.month() == check.month(),
     }
 }
-
-// pub fn show_day_for_task(task: &TaskItem, check: NaiveDate) -> Occurrence {
-//     if task.done_on_day(check) {
-//         Occurrence::Done
-//     } else {
-//         match task_on_day(task, check) {
-//             true => Occurrence::Todo,
-//             false => Occurrence::Nah
-//         }
-//     }
-// }
 
 pub fn show_type(kind: Repetition, start: NaiveDate, tasks: Vec<impl TaskLike>) {
     match kind {

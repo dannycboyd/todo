@@ -6,7 +6,7 @@ use std::fs::File;
 use std::fs;
 use std::error;
 
-use super::task::{ TaskItem, RawTaskItem, Mods };
+use super::task::{ TaskItem, RawTaskItem, Mod };
 use super::{cal, TDError};
 use super::DEFAULT_FILE;
 
@@ -17,7 +17,7 @@ pub enum Args {
     Help,
     List,
     MakeRaw(RawTaskItem),
-    Mods(i32, Vec<Mods>),
+    Mods(i32, Vec<Mod>),
     Save,
     Show(cal::Repetition, Option<Vec<u32>>),
     Quit,
@@ -66,7 +66,7 @@ impl Cmd {
 
     pub fn show(&self, kind: cal::Repetition, date_raw: Option<Vec<u32>>) {
         let start = cal::date_or_today(date_raw);
-        // cal::show_type(kind, start, self.storage); // This whole file should probably go away
+        // cal::show_type(kind, start, self.storage);
     }
 
     pub fn list_all(&self) {
@@ -79,7 +79,7 @@ impl Cmd {
         self.storage.iter_mut().find(|task| task.get_id() == id)
     }
 
-    pub fn modify(&mut self, id: i32, cmds: Vec<Mods>) {
+    pub fn modify(&mut self, id: i32, cmds: Vec<Mod>) {
         match self.find_task_by_id(id) {
             Some(task) => {
                 task.apply_modifications(cmds);

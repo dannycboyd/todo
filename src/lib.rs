@@ -68,6 +68,7 @@ impl std::fmt::Display for TDError {
   }
 }
 
+// It would be sick as hell to get a macro to do this for me
 impl From<serde_json::error::Error> for TDError {
   fn from (error: serde_json::error::Error) -> Self {
     let value = format!("Serde Parsing Error: {}", error);
@@ -212,11 +213,8 @@ pub fn connection_info() -> Result<String, TDError> {
 
 pub trait TaskLike {
   fn get_date(&self) -> NaiveDate;
-
   fn get_rep(&self) -> Repetition;
-
   fn is_finished(&self) -> bool;
   fn get_last_completed(&self) -> Option<&NaiveDate>;
-
   fn to_string(&self) -> String;
 }

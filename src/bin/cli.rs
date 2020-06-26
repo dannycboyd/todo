@@ -23,12 +23,13 @@ fn read(cmd_raw: &mut String) -> CmdResult<usize> {
 
 extern crate dotenv;
 
-async fn run() -> Result<(), TDError> {
-    let db_string = connection_info()?;
+fn run() -> Result<(), TDError> {
+    // let db_string = connection_info()?;
+    // println!("{:?}", db_string);
 
     let parser = task_item::CmdParser::new();
     let fallback_parser = task_item::RecoveryParser::new();
-    let cmdline = AsyncCmd::new(&db_string).await?;
+    let cmdline = AsyncCmd::new()?;
 
     loop {
         let mut cmd_raw = String::new();
@@ -36,12 +37,12 @@ async fn run() -> Result<(), TDError> {
         let cmd = parser.parse(&cmd_raw);
 
         let cmd_result = match cmd {
-            Ok(Args::MakeRaw(raw)) => cmdline.make(raw).await,
-            Ok(Args::List) => cmdline.list_all().await,
-            Ok(Args::Show(rep, when)) => cmdline.show(rep, when).await, // this needs to change so we can see period around [date]
-            Ok(Args::Mods(id, mods)) => cmdline.modify(id, mods).await,
-            Ok(Args::Detail(id)) => cmdline.detail(id).await,
-            Ok(Args::Do(id, date, finished)) => cmdline.do_task(id, date, finished).await,
+            Ok(Args::MakeRaw(raw)) => cmdline.make(raw),
+            Ok(Args::List) => cmdline.list_all(),
+            Ok(Args::Show(rep, when)) => cmdline.show(rep, when), // this needs to change so we can see period around [date]
+            Ok(Args::Mods(id, mods)) => cmdline.modify(id, mods),
+            Ok(Args::Detail(id)) => cmdline.detail(id),
+            Ok(Args::Do(id, date, finished)) => cmdline.do_task(id, date, finished),
             Ok(Args::Help(cmd)) => Ok(detailed_help(cmd)),
             Ok(Args::Quit) => break,
             Err(_e) => {
@@ -65,8 +66,7 @@ async fn run() -> Result<(), TDError> {
     Ok(())
 }
 
-#[tokio::main]
-async fn main () -> CmdResult<()> {
+fn main () -> CmdResult<()> {
     let date_p = task_item::DateParser::new();
     let rep_p = task_item::RepeatsParser::new();
     let per_p = task_item::PeriodParser::new();
@@ -83,6 +83,6 @@ async fn main () -> CmdResult<()> {
     println!("{:?}", per_p.parse("m 04-20"));
     println!("{:?}", per_p.parse("d"));
 
-    run().await?;
+    run()?;
     Ok(())
 }

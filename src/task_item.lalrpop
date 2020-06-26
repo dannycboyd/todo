@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::task::{RawTaskItem, Mods};
+use crate::task::{RawTaskItem, Mod};
 use crate::cal::Repetition;
 
 use crate::async_direct_cmd::{Args};
@@ -96,11 +96,11 @@ RawTask: RawTaskItem = {
     () => { RawTaskItem::new_empty() }
 }
 
-Modifications: Vec<Mods> = {
-    <mods:Modifications> <start:Date> => { let mut mods = mods; mods.push(Mods::Start(start)); mods },
-    <mods:Modifications> <rep:Repeats> => { let mut mods = mods; mods.push(Mods::Rep(rep)); mods },
-    <mods:Modifications> "t:" <title:Words> => { let mut mods = mods; mods.push(Mods::Title(title)); mods },
-    <mods:Modifications> "n:" <note:Words> => { let mut mods = mods; mods.push(Mods::Note(note)); mods },
+Modifications: Vec<Mod> = {
+    <modification:Modifications> <start:Date> => { let mut modification = modification; modification.push(Mod::Start(start)); modification },
+    <modification:Modifications> <rep:Repeats> => { let mut modification = modification; modification.push(Mod::Rep(rep)); modification },
+    <modification:Modifications> "t:" <title:Words> => { let mut modification = modification; modification.push(Mod::Title(title)); modification },
+    <modification:Modifications> "n:" <note:Words> => { let mut modification = modification; modification.push(Mod::Note(note)); modification },
     () => { vec![] }
 }
 
