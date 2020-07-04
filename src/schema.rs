@@ -19,6 +19,25 @@ table! {
     }
 }
 
+table! {
+    note (id) {
+        id -> Int4,
+        body -> Varchar,
+        created_at -> Timestamp,
+        updated_at -> Timestamp
+    }
+}
+
+// table! {
+//     references (id) {
+//         id -> Int4,
+//         parent_task -> int4,
+//         parent_note -> int4,
+//         child_task -> int4,
+//         child_note -> int4
+//     }
+// }
+
 joinable!(task_completions -> tasks (task_id));
 
 allow_tables_to_appear_in_same_query!(
