@@ -4,13 +4,21 @@ A todo-list/calendar
 # Currently in the very early stages
 This is a utility which you can use to create customizably repeating todo lists over a calendar.
 
-# Running
+# Docker
+* Docker must be installed, and you need an `.env` file with `DATABASE_URL`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` set. (`DATABASE_URL` is a composition of all of the others, should look something like `postgres://POSTGRES_USER:POSTGRES_PASSWORD@db:5432/POSTGRES_DB)`.
+* Run `docker build -t todo_prebuild .` to create a faster booting image. (Working on making this better, to skip the current long build time)
+* Run `docker-compose up` to start the services. The database will run on `0.0.0.0:5433` should you need direct access, and  the API service will run on `localhost:8080`
+* ## NOTE: SET UP dotenv so the service expects the right ports
+
+# Running without Docker
+* install [rust and cargo](https://www.rust-lang.org/tools/install)
+* an `env.sh` file, with the same variables set as in the docker section, with `export`.
 * install postgresql. On a mac, I recommend using Brew `brew install postgresql; brew services start postgresql`.
-* create a database. The default name for the repo is `caldata`: `createdb caldata`.
-* _optional_ If you're using the dumped backup, use `psql caldata < ./dumps/dumpname`.
-* install the rust toolchain nightly version `rustc 1.40.0-nightly (91fd6283e 2019-11-02)`: `rustup toolchain install nightly-2019-11-02`.
+* install the diesel CLI: `cargo install diesel_cli --no-default-features --features postgres
 * Set your environment variables. The `env.sh` file contains the development defaults. Apply them with `source env.sh`.
-* Set your cargo to use the nightly build version and run the cli: `rustup toolchain default nightly; cargo run --bin cli`
+* run `diesel setup` to create the database and apply the migrations.
+
+* Run the app or the service `cargo run --bin todo_cli`
 * Run a command: 
 ```
 list

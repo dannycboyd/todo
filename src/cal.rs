@@ -11,7 +11,6 @@ use std::str::FromStr;
 use ansi_term::Style;
 use ansi_term::Color::{Yellow};
 
-// use crate::task::TaskItem;
 use super::{TDError, TaskLike};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]

@@ -1,0 +1,9 @@
+target/
+tasks/
+.git/
+.vscode
+.gitignore
+README.md
+settings.json
+!Cargo.*
+!src/

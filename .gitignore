@@ -2,3 +2,5 @@ target/
 **/*.rs.bk
 caldata/
 .vscode
+.env
+env.sh

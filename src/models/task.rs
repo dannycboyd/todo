@@ -3,12 +3,14 @@ use crate::Repetition;
 use std::str::FromStr;
 use std::fmt::Display;
 use std::fmt;
+use serde::Deserialize;
 
-use crate::schema::{tasks, task_completions};
+use crate::schema::{tasks};
 
 #[derive(Queryable, Identifiable)]
 #[table_name = "tasks"]
 // super important note: THESE FIELDS MUST BE IN THE SAME ORDER AS THE `schema.rs` LISTINGS
+// More important: schema.rs gets regenerated every time you run migrations, and shouldn't be modified by hand.
 // If you don't, then you'll get serialization errors about cross-casting types. BAD
 pub struct Task {
   id: i32,
@@ -19,7 +21,7 @@ pub struct Task {
   pub finished: bool,
 }
 
-impl super::TaskLike for Task {
+impl crate::TaskLike for Task {
   fn get_date(&self) -> NaiveDate {
       self.start
   }
@@ -57,7 +59,7 @@ impl Display for Task {
   }
 }
 
-#[derive(Insertable, PartialEq)]
+#[derive(Insertable, PartialEq, Deserialize)]
 #[table_name = "tasks"]
 pub struct NewTask {
   pub start: NaiveDate,
@@ -75,32 +77,4 @@ pub struct TaskUpdate {
   pub title: Option<String>,
   pub note: Option<String>,
   pub finished: Option<bool>
-}
-
-#[derive(Queryable, Identifiable, Associations, Insertable)]
-#[belongs_to(Task)]
-#[table_name = "task_completions"]
-pub struct Completion {
-  id: i32,
-  date: NaiveDate,
-  task_id: i32
-}
-
-impl Completion {
-  pub fn get_date(&self) -> &NaiveDate {
-    &self.date
-  }
-}
-
-#[derive(Insertable)]
-#[table_name = "task_completions"]
-pub struct NewCompletion {
-  pub date: NaiveDate,
-  pub task_id: i32
-}
-
-impl NewCompletion {
-  pub fn new(id: i32, date: NaiveDate) -> Self {
-    Self { task_id: id, date: date }
-  }
 }

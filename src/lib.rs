@@ -1,22 +1,15 @@
-
-// #![feature(try_trait, async_closure)]
 use std::{env};
 pub mod cal;
 pub mod async_direct_cmd;
-pub mod task;
 pub mod parser_help;
 
 pub const DEFAULT_FILE: &str = "./caldata.json";
-// #[macro_use] extern crate lalrpop_util;
 pub mod task_item;
-use task::TaskItem;
-// use lalrpop_util::ParseError;
+pub mod old_task;
 use serde_json;
 use chrono::NaiveDate;
 use cal::Repetition;
 use url;
-
-use tokio_postgres::Row;
 
 // diesel schemas
 #[macro_use]
@@ -29,6 +22,7 @@ use dotenv::dotenv;
 // use std::env;
 
 pub mod schema;
+// pub mod models;
 pub mod models;
 
 #[derive(Debug)]
@@ -82,13 +76,6 @@ impl From<std::io::Error> for TDError {
   }
 }
 
-impl From<tokio_postgres::error::Error> for TDError {
-  fn from (error: tokio_postgres::error::Error) -> Self {
-    let value = format!("{}", error);
-    TDError::PostgresError(value)
-  }
-}
-
 impl From<hyper::Error> for TDError {
   fn from (error: hyper::Error) -> Self {
     let value = format!("{}", error);
@@ -137,20 +124,6 @@ impl From<diesel::result::Error> for TDError {
   }
 }
 
-fn from_row(row: Row) -> Result<TaskItem, TDError> {
-  let id: i32 = row.try_get(0)?;
-  let date: NaiveDate = row.try_get("start")?;
-  let rep: &str = row.try_get("repeats")?;
-  let rep = rep.parse::<Repetition>()?;
-  let title: &str = row.try_get("title")?;
-  let note: &str = match row.try_get("note") {
-      Ok(n) => n,
-      Err(_e) => ""
-  };
-  let finished: bool = row.try_get("finished")?;
-  Ok(TaskItem::new_by_id(id, date, title.to_string(), note.to_string(), rep, finished))
-}
-
 pub fn establish_connection() -> PgConnection {
   dotenv().ok();
 
@@ -158,56 +131,6 @@ pub fn establish_connection() -> PgConnection {
       .expect("DATABASE_URL must be set");
   PgConnection::establish(&database_url)
       .expect(&format!("Error connecting to {}", database_url))
-}
-
-pub fn connection_info() -> Result<String, TDError> {
-
-  let mut has_dbname = false;
-  let mut has_user = false;
-  let mut has_host = false;
-
-  let args: Vec<String> = env::args().collect();
-  let mut db_string: String = String::new();
-  for (i, arg) in args.iter().enumerate() {
-      if i > 0 {
-          if !has_dbname && arg.contains("dbname") {
-              db_string.push_str(arg);
-              db_string.push(' ');
-              has_dbname = true;
-          }
-          if !has_user && arg.contains("user") {
-              db_string.push_str(arg);
-              db_string.push(' ');
-              has_user = true;
-          }
-          if !has_host && arg.contains("host") {
-              db_string.push_str(arg);
-              db_string.push(' ');
-              has_host = true;
-          }
-      }
-  }
-
-  if !has_dbname {
-    println!("Getting TODO_DBNAME from environment...");
-    let dbname = env::var("TODO_DBNAME")?;
-    let dbname = format!("dbname={} ", dbname);
-    db_string.push_str(&dbname);
-  }
-  if !has_user {
-    println!("Getting TODO_USERNAME from environment...");
-    let dbuser = env::var("TODO_USERNAME")?;
-    let dbuser = format!("user={} ", dbuser);
-    db_string.push_str(&dbuser);
-
-  }
-  if !has_host {
-    println!("Getting TODO_HOSTNAME from environment...");
-    let dbhost = env::var("TODO_HOSTNAME")?;
-    let dbhost = format!("host={}", dbhost);
-    db_string.push_str(&dbhost);
-  }
-  Ok(db_string)
 }
 
 pub trait TaskLike {
