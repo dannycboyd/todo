@@ -11,12 +11,16 @@ use url::Url;
 
 use futures::stream::TryStreamExt;
 
-// use dotenv::dotenv;
+use dotenv::dotenv;
 // use std::env;
 
+
+#[macro_use] extern crate diesel_migrations;
 use diesel::PgConnection;
 use to_do::models::{task};
 use task::{Task, NewTask};
+
+embed_migrations!();
 
 async fn do_delete(connection: PgConnection, uri: &str) -> Result<String, TDError> {
     use to_do::schema::tasks::dsl::*;
@@ -138,6 +142,11 @@ async fn myecho(req: Request<Body>) -> Result<Response<Body>, TDError> {
 
 #[tokio::main]
 async fn main() -> Result<(), TDError> {
+    dotenv().ok();
+    let connection = establish_connection();
+
+    embedded_migrations::run(&connection)?;
+
     // dotenv().ok();
 
     let portno: u16 = 8080;

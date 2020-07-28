@@ -6,14 +6,14 @@ use to_do::async_direct_cmd::{AsyncCmd, Args};
 use to_do::{task_item, TDError};
 use to_do::parser_help::detailed_help;
 
+use dotenv::dotenv;
+
 type CmdResult<T> = std::result::Result<T, TDError>;
 
 fn read(cmd_raw: &mut String) -> CmdResult<usize> {
     let len = io::stdin().read_line(cmd_raw)?;
     Ok(len)
 }
-
-extern crate dotenv;
 
 fn run() -> Result<(), TDError> {
 
@@ -73,6 +73,7 @@ fn main () -> CmdResult<()> {
     println!("{:?}", per_p.parse("m 04-20"));
     println!("{:?}", per_p.parse("d"));
 
+    dotenv().ok();
     run()?;
     Ok(())
 }

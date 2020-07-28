@@ -8,35 +8,22 @@ services:
          - POSTGRES_USER=${POSTGRES_USER}
          - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
          - POSTGRES_DB=${POSTGRES_DB}
+      volumes: db-data
    app:
-      # build: # uncomment to skip creating a separate build image.
-      #    context: .
-      #    dockerfile: Dockerfile
-      image: "todo_prebuild" # docker build --tag todo_prebuild .
+      build:
+         context: ./
+         dockerfile: Dockerfile
       depends_on:
          - db
-      command: bash -c "bash ./wait-for-it.sh db:5432 -- diesel setup && todo_service"
+      command: sh -c "./wait-for.sh db:5432 -- todo_service" # embed migrations, diesel is not portable enough for this.
       volumes:
          - .:/src
       ports:
          - "${SERVICE_PORT}:8080"
-   # cli: ## input doesn't get sent, no point in this. Run the CLI against the docker db or local db
-   #    image: "todo_prebuild"
-   #    depends_on:
-   #       - db
-   #    command: bash -c "bash ./wait-for-it.sh db:5432 -- diesel setup && todo_cli"
-   #    volumes:
-   #       - .:/src
-
-   # dev: # intended to be used for faster builds, currently not working.
-   #    # image: "todo_build"
-   #    build: . # rename this to alt
-   #    depends_on:
-   #       - db
-   #    command: bash -c "bash ./wait-for-it.sh db:5432 -- diesel setup && cargo run --bin todo_service"
-   #    volumes:
-   #       - .:/src
-   #    ports:
-   #       - "${SERVICE_PORT}:8080"
+      environment:
+         - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+volumes:
+   db-data:
+      driver: local
 
 

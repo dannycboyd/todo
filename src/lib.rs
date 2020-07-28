@@ -14,6 +14,7 @@ use url;
 // diesel schemas
 #[macro_use]
 extern crate diesel;
+extern crate diesel_migrations;
 extern crate dotenv;
 
 use diesel::prelude::*;
@@ -66,6 +67,12 @@ impl From<serde_json::error::Error> for TDError {
   fn from (error: serde_json::error::Error) -> Self {
     let value = format!("Serde Parsing Error: {}", error);
     TDError::ParseError(value)
+  }
+}
+
+impl From<diesel_migrations::RunMigrationsError> for TDError {
+  fn from (error: diesel_migrations::RunMigrationsError) -> Self {
+    TDError::PostgresError(format!("Error running migrations!\n{}", error))
   }
 }
 
@@ -125,8 +132,6 @@ impl From<diesel::result::Error> for TDError {
 }
 
 pub fn establish_connection() -> PgConnection {
-  dotenv().ok();
-
   let database_url = env::var("DATABASE_URL")
       .expect("DATABASE_URL must be set");
   PgConnection::establish(&database_url)
