@@ -11,6 +11,8 @@ use chrono::NaiveDate;
 use cal::Repetition;
 use url;
 
+extern crate chrono;
+
 // diesel schemas
 #[macro_use]
 extern crate diesel;
@@ -19,12 +21,10 @@ extern crate dotenv;
 
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
-use dotenv::dotenv;
-// use std::env;
 
 pub mod schema;
-// pub mod models;
 pub mod models;
+pub mod actions; // actix-web action functions
 
 #[derive(Debug)]
 pub enum TDError {
@@ -83,13 +83,6 @@ impl From<std::io::Error> for TDError {
   }
 }
 
-impl From<hyper::Error> for TDError {
-  fn from (error: hyper::Error) -> Self {
-    let value = format!("{}", error);
-    TDError::HyperError(value)
-  }
-}
-
 impl From<std::string::FromUtf8Error> for TDError {
   fn from (error: std::string::FromUtf8Error) -> Self {
     let value = format!("FromUFT8Error: {}", error);
@@ -139,7 +132,8 @@ pub fn establish_connection() -> PgConnection {
 }
 
 pub trait TaskLike {
-  fn get_date(&self) -> NaiveDate;
+  fn get_start(&self) -> Option<NaiveDate>;
+  fn formatted_date(&self) -> String;
   fn get_rep(&self) -> Repetition;
   fn is_finished(&self) -> bool;
   fn get_last_completed(&self) -> Option<&NaiveDate>;

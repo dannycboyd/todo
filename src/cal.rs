@@ -104,18 +104,22 @@ fn next_month(date: &NaiveDate) -> Option<NaiveDate> {
 }
 
 pub fn task_on_day(task: &impl TaskLike, check: NaiveDate) -> bool {
-    let start = task.get_date();
-    let rep = &task.get_rep();
-    if task.is_finished() {
-        let last_day = task.get_last_completed().unwrap();
-        if last_day < &check { return false }
-    }
-    match rep {
-        Repetition::Never => start == check,
-        Repetition::Daily => start <= check,
-        Repetition::Weekly => start <= check && start.weekday() == check.weekday(),
-        Repetition::Monthly => start <= check && start.day() == check.day(),
-        Repetition::Yearly => start <= check && start.day() == check.day() && start.month() == check.month(),
+    match task.get_start() {
+        Some(start) => {
+            let rep = &task.get_rep();
+            if task.is_finished() {
+                let last_day = task.get_last_completed().unwrap();
+                if last_day < &check { return false }
+            }
+            match rep {
+                Repetition::Never => start == check,
+                Repetition::Daily => start <= check,
+                Repetition::Weekly => start <= check && start.weekday() == check.weekday(),
+                Repetition::Monthly => start <= check && start.day() == check.day(),
+                Repetition::Yearly => start <= check && start.day() == check.day() && start.month() == check.month(),
+            }
+        },
+        None => false
     }
 }
 

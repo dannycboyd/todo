@@ -1,19 +1,28 @@
 table! {
-    notes (id) {
+    item_references (id) {
         id -> Int4,
         created_at -> Timestamp,
-        updated_at -> Nullable<Timestamp>,
-        body -> Varchar,
+        origin_id -> Int4,
+        child_id -> Int4,
     }
 }
 
 table! {
-    refs (parent_task, parent_note, child_task, child_note) {
+    items (id) {
+        id -> Int4,
         created_at -> Timestamp,
-        parent_task -> Int4,
-        parent_note -> Int4,
-        child_task -> Int4,
-        child_note -> Int4,
+        updated_at -> Timestamp,
+        start_d -> Nullable<Timestamp>,
+        end_d -> Nullable<Timestamp>,
+        repeats -> Bpchar,
+        title -> Varchar,
+        note -> Nullable<Varchar>,
+        marked_done -> Bool,
+        deleted -> Bool,
+        parent_id -> Nullable<Int4>,
+        journal -> Bool,
+        todo -> Bool,
+        cal -> Bool,
     }
 }
 
@@ -39,8 +48,8 @@ table! {
 joinable!(task_completions -> tasks (task_id));
 
 allow_tables_to_appear_in_same_query!(
-    notes,
-    refs,
+    item_references,
+    items,
     task_completions,
     tasks,
 );

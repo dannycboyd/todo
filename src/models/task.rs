@@ -22,8 +22,12 @@ pub struct Task {
 }
 
 impl crate::TaskLike for Task {
-  fn get_date(&self) -> NaiveDate {
-      self.start
+  fn get_start(&self) -> Option<NaiveDate> {
+      Some(self.start)
+  }
+
+  fn formatted_date(&self) -> String {
+    self.start.to_string()
   }
 
   fn get_rep(&self) -> Repetition {
