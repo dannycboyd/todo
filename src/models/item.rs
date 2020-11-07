@@ -185,7 +185,7 @@ pub struct ItemFilter {
   pub parent_id: Option<i32>, // done
   pub limit: Option<i64>, // done
   // type
-  pub journal: Option<bool>, 
+  pub journal: Option<bool>,
   pub todo: Option<bool>,
   pub cal: Option<bool>,
   // structural

@@ -97,7 +97,7 @@ async fn add_item(
     form: web::Json<AddItem>,
 ) -> Result<HttpResponse, Error> {
     let conn = pool.get().expect("couldn't get db connection from pool");
-    
+
     let request_body = form.into_inner();
     let new_refs = request_body.refs;
 

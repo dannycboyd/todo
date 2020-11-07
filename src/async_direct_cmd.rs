@@ -63,7 +63,7 @@ impl AsyncCmd {
         .load::<Task>(&self.connection)?;
       let found_completions: Vec<Completion> = Completion::belonging_to(&found_task)
         .load(&self.connection)?;
-      
+
       if found_task.len() > 0 {
         println!("{}", found_task[0]);
         for completion in found_completions {
@@ -133,7 +133,7 @@ impl AsyncCmd {
 
       use super::schema::tasks::dsl::*;
       use diesel::prelude::*;
-      
+
       // get the list of changes
 
       if changes.len() > 0 {

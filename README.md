@@ -19,7 +19,7 @@ This is a utility which you can use to create customizably repeating todo lists 
 * run `diesel setup` to create the database and apply the migrations.
 
 * Run the app or the service `cargo run --bin todo_cli`
-* Run a command: 
+* Run a command:
 ```
 list
 make 01-01-2021 y `New Years` `Happy New Year! Welcome 2021!`
