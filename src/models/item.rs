@@ -209,23 +209,3 @@ pub struct DateRange {
     pub after: Option<DateTime<Utc>>,
     pub before: Option<DateTime<Utc>>
 }
-
-// #[derive(Deserialize)]
-// pub struct ItemFilter {
-//     pub item_id: i32,
-//     pub user_id: i32,
-//     pub title_filter: String,
-//     pub body_filter: String,
-//     // how do I want dates to work?
-//     pub start: DateRange,
-//     pub end: DateRange,
-//     pub created: DateRange,
-//     pub updated: DateRange,
-//     pub deleted: bool,
-//     pub parent_id: Option<i32>,
-//     pub journal: bool,
-//     pub todo: bool,
-//     pub cal: bool,
-
-//     pub with_related: bool
-// }
