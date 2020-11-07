@@ -1,6 +1,7 @@
 use chrono::{NaiveDate, NaiveDateTime, Utc, TimeZone, DateTime};
 type UtcDateTime = DateTime<Utc>;
 use crate::{Repetition, TaskLike};
+use crate::old_task::{Mod, Mods};
 use std::str::FromStr;
 use std::fmt;
 use std::fmt::Display;
@@ -44,7 +45,7 @@ impl TaskLike for Item {
     self.id
   }
 
-  fn formatted_date(&self) -> String { // this is wonky
+  fn formatted_date(&self) -> String { // this is wonky, needs to parse into a timezoned date, since they're in UTC
     match (self.start_d, self.end_d) {
       (Some(start), Some(end)) => {
         // print range
@@ -117,6 +118,45 @@ pub struct NewItem {
   pub cal: Option<bool>,
 }
 
+impl NewItem {
+  pub fn new() -> Self {
+    NewItem {
+      id: None,
+      start_d: None,
+      end_d: None,
+      repeats: None,
+      title: String::new(),
+      note: None,
+      marked_done: None,
+      deleted: None,
+      journal: None,
+      todo: None,
+      cal: None
+    }
+  }
+}
+
+impl From<Mods> for NewItem {
+  fn from(mods: Mods) -> Self {
+    let mut update = NewItem::new();
+
+    for modification in mods.data {
+      match modification {
+        Mod::Start(date) => update.start_d = date,
+        Mod::End(date) => update.end_d = date,
+        Mod::Rep(rep) => update.repeats = Some(rep),
+        Mod::Title(new_title) => update.title = new_title,
+        Mod::Note(new_note) => update.note = Some(new_note),
+        Mod::Cal(value) => update.cal = Some(value),
+        Mod::Todo(value) => update.todo = Some(value),
+        Mod::Journal(value) => update.journal = Some(value),
+      }
+    };
+
+    update
+  }
+}
+
 // For retrieving from API calls
 #[derive(Deserialize, Debug)]
 pub struct NewItemTz {
@@ -175,6 +215,8 @@ pub struct ItemVec {
   pub refs: Vec<crate::models::reference::ItemRef>
 }
 
+
+// ######################## ITEM FILTER QUERY TYPES
 #[derive(Deserialize)]
 pub struct ItemFilter {
   pub item_id: Option<i32>, // done
@@ -191,12 +233,8 @@ pub struct ItemFilter {
   // structural
   pub with_related: Option<bool>, // done
   // dates
-  pub occurs_after: Option<UtcDateTime>,
+  pub occurs_after: Option<UtcDateTime>, // 2012-03-29T10:05:45-06:00
   pub occurs_before: Option<UtcDateTime>,
-  // pub start_before: Option<UtcDateTime>, // 2012-03-29T10:05:45-06:00
-  // pub start_after: Option<UtcDateTime>,
-  // pub end_before: Option<UtcDateTime>,
-  // pub end_after: Option<UtcDateTime>,
   pub created_before: Option<UtcDateTime>,
   pub created_after: Option<UtcDateTime>,
   pub updated_before: Option<UtcDateTime>,
@@ -204,8 +242,27 @@ pub struct ItemFilter {
   pub repeats: Option<String>
 }
 
-#[derive(Deserialize, Debug)]
-pub struct DateRange {
-    pub after: Option<DateTime<Utc>>,
-    pub before: Option<DateTime<Utc>>
+impl ItemFilter {
+  pub fn new() -> Self {
+    ItemFilter {
+      item_id: None,
+      creator_id: None,
+      title_filter: None,
+      body_filter: None,
+      deleted: None,
+      parent_id: None,
+      limit: None,
+      journal: None,
+      todo: None,
+      cal: None,
+      with_related: None,
+      occurs_after: None,
+      occurs_before: None,
+      created_before: None,
+      created_after: None,
+      updated_before: None,
+      updated_after: None,
+      repeats: None
+    }
+  }
 }

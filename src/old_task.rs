@@ -1,27 +1,40 @@
 use crate::cal;
 use crate::TDError;
+use chrono::NaiveDateTime;
 
 #[derive(Debug)]
 pub enum Mod { // used by lalrpop parsing
-    Start(Vec<u32>),
-    Rep(cal::Repetition),
+    Start(Option<NaiveDateTime>),
+    End(Option<NaiveDateTime>),
+    Rep(String),
     Title(String),
     Note(String),
+    Cal(bool),
+    Todo(bool),
+    Journal(bool)
 }
 
-impl Mod {
-    pub fn to_sql(&self) -> Result<String, TDError> {
-        Ok(match self {
-            Self::Start(date_raw) => {
-                let start = cal::get_start(&date_raw.to_vec())?;
-                let start = start.format("%Y-%m-%d").to_string();
-                format!("start='{}' ", start)
-            },
-            Self::Rep(r) => format!("repeats='{}' ", r.to_sql_string()),
-            Self::Title(t) => format!("title='{}' ", t),
-            Self::Note(n) => format!("note='{}' ", n)
-        })
+#[derive(Debug)]
+pub struct Mods {
+    pub data: Vec<Mod>
+}
+
+impl Mods {
+    pub fn new() -> Self {
+        Self {
+            data: vec![]
+        }
     }
+
+    pub fn has_changes(&self) -> bool {
+        self.data.len() > 0
+    }
+
+    pub fn push(&mut self, mod_item: Mod) {
+        self.data.push(mod_item);
+    }
+
+    // could simplify some things to add an iter implementation
 }
 
 #[derive(Debug)]

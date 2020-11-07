@@ -1,5 +1,6 @@
 use std::io;
 extern crate chrono;
+use chrono::DateTime;
 
 extern crate to_do;
 use to_do::async_direct_cmd::{AsyncCmd, Args};
@@ -27,7 +28,7 @@ fn run() -> Result<(), TDError> {
         let cmd = parser.parse(&cmd_raw);
 
         let cmd_result = match cmd {
-            Ok(Args::MakeRaw(raw)) => cmdline.make(raw),
+            Ok(Args::MakeRaw(raw)) => cmdline.upsert(raw),
             Ok(Args::List) => cmdline.list_all(),
             Ok(Args::Show(rep, when)) => cmdline.show(rep, when), // this needs to change so we can see period around [date]
             Ok(Args::Mods(id, mods)) => cmdline.modify(id, mods),
@@ -74,6 +75,11 @@ fn main () -> CmdResult<()> {
     println!("{:?}", per_p.parse("d"));
 
     dotenv().ok();
+
+    // match DateTime::parse_from_str("1983 Apr 13 12:09:14 +0000", "%Y %b %d %H:%M:%S %z") {
+    //     Ok(date) => println!("{}", date),
+    //     Err(e) => println!("{}", e)
+    // }
     run()?;
     Ok(())
 }

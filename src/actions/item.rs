@@ -145,17 +145,17 @@ pub fn get_items(conn: &PgConnection, filters: ItemFilter) -> Result<ItemVec, di
   Ok(response)
 }
 
-// pub fn get_item_by_id(item_id: i32, conn: &PgConnection) -> Result<Option<Item>, diesel::result::Error> {
-//   use crate::schema::items::dsl::*;
+pub fn get_item_by_id(item_id: i32, conn: &PgConnection) -> Result<Option<Item>, diesel::result::Error> {
+  use crate::schema::items::dsl::*;
 
-//   let item_query = items.filter(id.eq(item_id));
-//   println!("{}", diesel::debug_query::<diesel::pg::Pg, _>(&item_query));
-//   let item = item_query
-//     .first::<Item>(conn)
-//     .optional()?;
+  let item_query = items.filter(id.eq(item_id));
+  println!("{}", diesel::debug_query::<diesel::pg::Pg, _>(&item_query));
+  let item = item_query
+    .first::<Item>(conn)
+    .optional()?;
 
-//   Ok(item)
-// }
+  Ok(item)
+}
 
 pub fn upsert_item(new_item: NewItem, references: Vec<NewItemRef>, conn: &PgConnection) -> Result<Item, diesel::result::Error> {
   use crate::schema::items::dsl::*;
