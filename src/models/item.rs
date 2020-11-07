@@ -26,18 +26,17 @@ pub struct Item {
   pub parent_id: Option<i32>,
   pub journal: bool,
   pub todo: bool,
-  pub cal: bool,
+  pub cal: bool
 }
 
 impl Item {
   // use this to get access to the notes
   fn note_or_empty(&self) -> String {
     match &self.note {
-      Some(note) => { note.to_string() },
+      Some(note) => note.to_string(),
       None => String::from("n/a")
     }
   }
-
 }
 
 impl TaskLike for Item {
@@ -45,20 +44,12 @@ impl TaskLike for Item {
     self.id
   }
 
-  fn formatted_date(&self) -> String { // this is wonky, needs to parse into a timezoned date, since they're in UTC
+  fn formatted_date(&self) -> String {
+    // this is wonky, needs to parse into a timezoned date, since they're in UTC
     match (self.start_d, self.end_d) {
-      (Some(start), Some(end)) => {
-        // print range
-        format!("{} - {}", start, end)
-      },
-      (Some(start), None) => {
-        // print date
-        format!("{}", start)
-      },
-      _ => {
-        // no date
-        String::new()
-      }
+      (Some(start), Some(end)) => format!("{} - {}", start, end),
+      (Some(start), None) => format!("{}", start),
+      _ => String::new()
     }
   }
 
@@ -70,8 +61,7 @@ impl TaskLike for Item {
   }
 
   fn get_rep(&self) -> Repetition {
-    Repetition::from_str(&self.repeats.to_string())
-      .unwrap_or_else(|_| Repetition::Never)
+    Repetition::from_str(&self.repeats.to_string()).unwrap_or_else(|_| Repetition::Never)
   }
 
   fn is_finished(&self) -> bool {
@@ -90,13 +80,16 @@ impl TaskLike for Item {
 
 impl Display for Item {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "{id} - {title}\n{range}\n{rep}\nNotes: {note}\nFinished: {finished}",
-        id=self.id,
-        title=self.title,
-        range=self.formatted_date(),
-        rep=self.repeats,
-        note=self.note_or_empty(),
-        finished=self.marked_done)
+    write!(
+      f,
+      "{id} - {title}\n{range}\n{rep}\nNotes: {note}\nFinished: {finished}",
+      id = self.id,
+      title = self.title,
+      range = self.formatted_date(),
+      rep = self.repeats,
+      note = self.note_or_empty(),
+      finished = self.marked_done
+    )
   }
 }
 
@@ -115,7 +108,7 @@ pub struct NewItem {
   pub deleted: Option<bool>,
   pub journal: Option<bool>,
   pub todo: Option<bool>,
-  pub cal: Option<bool>,
+  pub cal: Option<bool>
 }
 
 impl NewItem {
@@ -149,9 +142,9 @@ impl From<Mods> for NewItem {
         Mod::Note(new_note) => update.note = Some(new_note),
         Mod::Cal(value) => update.cal = Some(value),
         Mod::Todo(value) => update.todo = Some(value),
-        Mod::Journal(value) => update.journal = Some(value),
+        Mod::Journal(value) => update.journal = Some(value)
       }
-    };
+    }
 
     update
   }
@@ -181,7 +174,6 @@ pub fn opt_utc_to_naive<Tz: TimeZone>(dt_tz: Option<DateTime<Tz>>) -> Option<Nai
     None => None
   }
 }
-
 
 impl From<NewItemTz> for NewItem {
   fn from(old_item: NewItemTz) -> Self {
@@ -215,17 +207,16 @@ pub struct ItemVec {
   pub refs: Vec<crate::models::reference::ItemRef>
 }
 
-
 // ######################## ITEM FILTER QUERY TYPES
 #[derive(Deserialize)]
 pub struct ItemFilter {
-  pub item_id: Option<i32>, // done
+  pub item_id: Option<i32>,    // done
   pub creator_id: Option<i32>, // no users yet
   pub title_filter: Option<String>,
   pub body_filter: Option<String>,
-  pub deleted: Option<bool>, // done
+  pub deleted: Option<bool>,  // done
   pub parent_id: Option<i32>, // done
-  pub limit: Option<i64>, // done
+  pub limit: Option<i64>,     // done
   // type
   pub journal: Option<bool>,
   pub todo: Option<bool>,

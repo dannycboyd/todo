@@ -28,6 +28,9 @@ pub struct NewCompletion {
 
 impl NewCompletion {
   pub fn new(id: i32, date: NaiveDate) -> Self {
-    Self { task_id: id, date: date }
+    Self {
+      task_id: id,
+      date: date
+    }
   }
 }

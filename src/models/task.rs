@@ -18,7 +18,7 @@ pub struct Task {
   pub repeats: String,
   pub title: String,
   pub note: String,
-  pub finished: bool,
+  pub finished: bool
 }
 
 impl crate::TaskLike for Task {
@@ -27,7 +27,7 @@ impl crate::TaskLike for Task {
   }
 
   fn get_start(&self) -> Option<NaiveDate> {
-      Some(self.start)
+    Some(self.start)
   }
 
   fn formatted_date(&self) -> String {
@@ -39,11 +39,11 @@ impl crate::TaskLike for Task {
   }
 
   fn is_finished(&self) -> bool {
-      self.finished
+    self.finished
   }
 
   fn get_last_completed(&self) -> Option<&NaiveDate> {
-      None
+    None
   }
 
   // fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -57,13 +57,16 @@ impl crate::TaskLike for Task {
 
 impl Display for Task {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "{} - {}: {}, {rep}\nNotes: {note}\nFinished: {finished}",
-        id=self.id,
-        title=self.title,
-        start=self.start,
-        rep=self.repeats,
-        note=self.note,
-        finished=self.finished)
+    write!(
+      f,
+      "{} - {}: {}, {rep}\nNotes: {note}\nFinished: {finished}",
+      id = self.id,
+      title = self.title,
+      start = self.start,
+      rep = self.repeats,
+      note = self.note,
+      finished = self.finished
+    )
   }
 }
 
@@ -78,7 +81,7 @@ pub struct NewTask {
 }
 
 #[derive(AsChangeset)]
-#[table_name="tasks"]
+#[table_name = "tasks"]
 pub struct TaskUpdate {
   pub start: Option<NaiveDate>,
   pub repeats: Option<String>,

@@ -3,7 +3,6 @@ use serde::{Serialize, Deserialize};
 
 use crate::schema::item_references;
 
-
 // #[derive(Queryable)]
 // pub struct Ref {
 //   created_at: NaiveDateTime,
@@ -20,7 +19,6 @@ pub struct ItemRef {
   pub origin_id: i32,
   pub child_id: i32
 }
-
 
 // impl ItemRef {
 //   pub fn by_child_id(item_id: i32) -> diesel::query_builder::SelectStatement<item_references::table> {

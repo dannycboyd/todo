@@ -28,15 +28,15 @@ pub mod actions; // actix-web action functions
 
 #[derive(Debug)]
 pub enum TDError {
-    IOError(String),
-    ParseError(String),
-    PostgresError(String),
-    HyperError(String),
-    VarError(String),
-    ConnectionError(String),
-    NoneError,
-    SerializeError,
-    Quit,
+  IOError(String),
+  ParseError(String),
+  PostgresError(String),
+  HyperError(String),
+  VarError(String),
+  ConnectionError(String),
+  NoneError,
+  SerializeError,
+  Quit
 }
 
 impl std::error::Error for TDError {
@@ -64,27 +64,27 @@ impl std::fmt::Display for TDError {
 
 // It would be sick as hell to get a macro to do this for me
 impl From<serde_json::error::Error> for TDError {
-  fn from (error: serde_json::error::Error) -> Self {
+  fn from(error: serde_json::error::Error) -> Self {
     let value = format!("Serde Parsing Error: {}", error);
     TDError::ParseError(value)
   }
 }
 
 impl From<diesel_migrations::RunMigrationsError> for TDError {
-  fn from (error: diesel_migrations::RunMigrationsError) -> Self {
+  fn from(error: diesel_migrations::RunMigrationsError) -> Self {
     TDError::PostgresError(format!("Error running migrations!\n{}", error))
   }
 }
 
 impl From<std::io::Error> for TDError {
-  fn from (error: std::io::Error) -> Self {
+  fn from(error: std::io::Error) -> Self {
     let value = format!("{}", error);
     TDError::IOError(value)
   }
 }
 
 impl From<std::string::FromUtf8Error> for TDError {
-  fn from (error: std::string::FromUtf8Error) -> Self {
+  fn from(error: std::string::FromUtf8Error) -> Self {
     let value = format!("FromUFT8Error: {}", error);
     TDError::ParseError(value)
   }
@@ -97,38 +97,36 @@ impl From<std::string::FromUtf8Error> for TDError {
 // }
 
 impl From<url::ParseError> for TDError {
-  fn from (error: url::ParseError) -> Self {
+  fn from(error: url::ParseError) -> Self {
     let value = format!("Can't parse url! {}", error);
     TDError::ParseError(value)
   }
 }
 
 impl From<std::num::ParseIntError> for TDError {
-  fn from (error: std::num::ParseIntError) -> Self {
+  fn from(error: std::num::ParseIntError) -> Self {
     let value = format!("{}", error);
     TDError::ParseError(value)
   }
 }
 
 impl From<std::env::VarError> for TDError {
-  fn from (error: std::env::VarError) -> Self {
+  fn from(error: std::env::VarError) -> Self {
     let value = format!("{}", error);
     TDError::VarError(value)
   }
 }
 
 impl From<diesel::result::Error> for TDError {
-  fn from (error: diesel::result::Error) -> Self {
+  fn from(error: diesel::result::Error) -> Self {
     let value = format!("{}", error);
     TDError::ConnectionError(value)
   }
 }
 
 pub fn establish_connection() -> PgConnection {
-  let database_url = env::var("DATABASE_URL")
-      .expect("DATABASE_URL must be set");
-  PgConnection::establish(&database_url)
-      .expect(&format!("Error connecting to {}", database_url))
+  let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+  PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
 }
 
 pub trait TaskLike {

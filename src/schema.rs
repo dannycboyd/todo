@@ -47,9 +47,4 @@ table! {
 
 joinable!(task_completions -> tasks (task_id));
 
-allow_tables_to_appear_in_same_query!(
-    item_references,
-    items,
-    task_completions,
-    tasks,
-);
+allow_tables_to_appear_in_same_query!(item_references, items, task_completions, tasks,);
