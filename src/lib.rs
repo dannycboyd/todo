@@ -132,6 +132,7 @@ pub fn establish_connection() -> PgConnection {
 }
 
 pub trait TaskLike {
+  fn get_id(&self) -> i32;
   fn get_start(&self) -> Option<NaiveDate>;
   fn formatted_date(&self) -> String;
   fn get_rep(&self) -> Repetition;

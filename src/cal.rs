@@ -2,15 +2,16 @@
 // add functions for displaying repetition inside range
 use serde::{Serialize, Deserialize};
 use chrono::NaiveDate;
+use chrono::{DateTime, Utc};
 use chrono::Local; // Utc, Local
 use chrono::Datelike;
 use std::fmt;
 use std::str::FromStr;
 
-
 use ansi_term::Style;
 use ansi_term::Color::{Yellow};
 
+use super::models::item::Item;
 use super::{TDError, TaskLike};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
@@ -37,7 +38,7 @@ impl FromStr for Repetition {
         })
     }
 }
-    
+
 impl  Repetition {
     pub fn to_sql_string(&self) -> String {
         String::from_str(match self {
@@ -93,7 +94,7 @@ fn get_prev_sunday(date: NaiveDate) -> Option<NaiveDate> {
 fn next_month(date: &NaiveDate) -> Option<NaiveDate> {
     let mut year = date.year();
     let mut month = date.month();
-    
+
     if month == 12 {
         year = year + 1;
         month = 1;
@@ -131,6 +132,37 @@ pub fn show_type(kind: Repetition, start: NaiveDate, tasks: Vec<impl TaskLike>) 
         Repetition::Monthly => print_month(start, tasks),
         Repetition::Yearly => print_year(start, tasks),
     }
+}
+
+pub fn occurs_between(mut items: Vec<Item>, start: DateTime<Utc>, end: DateTime<Utc>) -> Vec<Item> {
+    let mut start_date = start.naive_utc().date();
+    let end_date = end.naive_utc().date();
+
+    let mut occurs: Vec<i32> = vec![];
+    while start_date < end_date {
+        // for each item in the list
+        // check if item occurs on start_date
+        for i in 0..items.len() {
+            if !occurs.contains(&items[i].get_id()) {
+                if task_on_day(&items[i], start_date) {
+                    occurs.push(items[i].get_id());
+                };
+            }
+        };
+
+        // t -> remove from items, add to return
+    start_date = start_date.checked_add_signed(chrono::Duration::days(1)).unwrap();
+    };
+    let mut i = 0;
+    while i != items.len() {
+        if occurs.contains(&items[i].get_id()) {
+            i += 1; // index up by one
+        } else {
+            items.remove(i); // items gets shorter
+        }
+    }
+
+    items
 }
 
 pub fn print_month(date: NaiveDate, tasks: Vec<impl TaskLike>) {

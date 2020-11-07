@@ -1,4 +1,5 @@
 use chrono::{NaiveDate, NaiveDateTime, Utc, TimeZone, DateTime};
+type UtcDateTime = DateTime<Utc>;
 use crate::{Repetition, TaskLike};
 use std::str::FromStr;
 use std::fmt;
@@ -19,7 +20,7 @@ pub struct Item {
   pub repeats: String,
   pub title: String,
   pub note: Option<String>,
-  pub marked_done: bool, // I'm not sure if we need this
+  pub marked_done: bool, // I'm not sure if we need this, should probably be another table ngl
   pub deleted: bool,
   pub parent_id: Option<i32>,
   pub journal: bool,
@@ -39,6 +40,10 @@ impl Item {
 }
 
 impl TaskLike for Item {
+  fn get_id(&self) -> i32 {
+    self.id
+  }
+
   fn formatted_date(&self) -> String { // this is wonky
     match (self.start_d, self.end_d) {
       (Some(start), Some(end)) => {
@@ -156,51 +161,71 @@ impl From<NewItemTz> for NewItem {
   }
 }
 
-/*
-Problem: doing updates requires either a hand-rolled query or a AsChangeset object with optional fields
-problem: this struct has no id, can't be used for updates
-problem: I want a chance to translate dates from tz into utc
+#[derive(Serialize)]
+pub struct ItemResponse {
+  pub item_id: i32,
+  pub item: Option<Item>,
+  pub parents: Vec<Item>,
+  pub children: Vec<Item>
+}
 
-I need a layer between the API and the internals
-  incoming
-    - dateTimeTz -> naiveDateTime
-    - POST: determine insert or update
-  outgoing
-    - naiveDateTime -> tz? only if requests have a timezone on them, probably don't do this, and expect requesters to know their own timezone
-  
+#[derive(Serialize)]
+pub struct ItemVec {
+  pub items: Vec<Item>,
+  pub refs: Vec<crate::models::reference::ItemRef>
+}
 
-*/
+#[derive(Deserialize)]
+pub struct ItemFilter {
+  pub item_id: Option<i32>, // done
+  pub creator_id: Option<i32>, // no users yet
+  pub title_filter: Option<String>,
+  pub body_filter: Option<String>,
+  pub deleted: Option<bool>, // done
+  pub parent_id: Option<i32>, // done
+  pub limit: Option<i64>, // done
+  // type
+  pub journal: Option<bool>, 
+  pub todo: Option<bool>,
+  pub cal: Option<bool>,
+  // structural
+  pub with_related: Option<bool>, // done
+  // dates
+  pub occurs_after: Option<UtcDateTime>,
+  pub occurs_before: Option<UtcDateTime>,
+  // pub start_before: Option<UtcDateTime>, // 2012-03-29T10:05:45-06:00
+  // pub start_after: Option<UtcDateTime>,
+  // pub end_before: Option<UtcDateTime>,
+  // pub end_after: Option<UtcDateTime>,
+  pub created_before: Option<UtcDateTime>,
+  pub created_after: Option<UtcDateTime>,
+  pub updated_before: Option<UtcDateTime>,
+  pub updated_after: Option<UtcDateTime>,
+  pub repeats: Option<String>
+}
 
-// #[derive(Insertable)]
-// #[table_name = "items"]
-// pub struct ChangeItem {
-//   pub created_at: Option<NaiveDateTime>,
-//   pub updated_at: Option<NaiveDateTime>,
-//   pub start_d: Option<NaiveDateTime>,
-//   pub end_d: Option<NaiveDateTime>,
-//   pub repeats: Option<String>,
-//   pub title: Option<String>,
-//   pub note: Option<String>,
-//   pub marked_done: bool, // I'm not sure if we need this
-//   pub deleted: bool,
-//   pub journal: bool,
-//   pub todo: bool,
-//   pub cal: bool,
-// }
+#[derive(Deserialize, Debug)]
+pub struct DateRange {
+    pub after: Option<DateTime<Utc>>,
+    pub before: Option<DateTime<Utc>>
+}
 
-// impl NewItem {
-//   pub fn new(form: actix_web::web::Json<NewItem>) -> Self {
-//     Self {
-//       start_d: None,
-//       end_d: None,
-//       repeats: String::from("n"),
-//       title: String::new(),
-//       note: None,
-//       marked_done: false,
-//       deleted: false,
-//       journal: false,
-//       todo: false,
-//       cal: false
-//     }
-//   }
+// #[derive(Deserialize)]
+// pub struct ItemFilter {
+//     pub item_id: i32,
+//     pub user_id: i32,
+//     pub title_filter: String,
+//     pub body_filter: String,
+//     // how do I want dates to work?
+//     pub start: DateRange,
+//     pub end: DateRange,
+//     pub created: DateRange,
+//     pub updated: DateRange,
+//     pub deleted: bool,
+//     pub parent_id: Option<i32>,
+//     pub journal: bool,
+//     pub todo: bool,
+//     pub cal: bool,
+
+//     pub with_related: bool
 // }

@@ -22,6 +22,10 @@ pub struct Task {
 }
 
 impl crate::TaskLike for Task {
+  fn get_id(&self) -> i32 {
+    self.id
+  }
+
   fn get_start(&self) -> Option<NaiveDate> {
       Some(self.start)
   }

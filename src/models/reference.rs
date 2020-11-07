@@ -21,6 +21,15 @@ pub struct ItemRef {
   pub child_id: i32
 }
 
+
+// impl ItemRef {
+//   pub fn by_child_id(item_id: i32) -> diesel::query_builder::SelectStatement<item_references::table> {
+//     use crate::schema::item_references::dsl::*;
+//     use diesel::prelude::*;
+//     item_references.filter(child_id.eq(item_id)).select(origin_id)
+//   }
+// }
+
 #[derive(Insertable, Deserialize, Debug, AsChangeset)]
 #[table_name = "item_references"]
 pub struct NewItemRef {
