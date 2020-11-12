@@ -37,6 +37,8 @@ table! {
         prefix -> Nullable<Varchar>,
         note -> Nullable<Varchar>,
         deleted -> Bool,
+        pwd_hash -> Varchar,
+        pwd_salt -> Bytea,
     }
 }
 

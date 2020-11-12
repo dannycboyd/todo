@@ -33,8 +33,8 @@ impl FromStr for Repetition {
       "y" | "yearly" => Repetition::Yearly,
       "w" | "weekly" => Repetition::Weekly,
       "m" | "monthly" => Repetition::Monthly,
-      "d" | "daily" | &_ => Repetition::Daily,
-      "_" => Err(TDError::ParseError("An error for testing".to_string()))?
+      "d" | "daily" | &_ => Repetition::Daily
+      // "_" => Err(TDError::ParseError("An error for testing".to_string()))?
     })
   }
 }

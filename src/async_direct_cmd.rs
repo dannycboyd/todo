@@ -1,7 +1,7 @@
 // CLI Tool version of calendar. Works with direct connection to postgres
 // Rename this file, and respec the functions to be more generalized, and then we can put this as the backend to both the CLI and the server.
 // Since the update to diesel none of this needs to be async
-use super::old_task::{RawTaskItem, Mod, Mods};
+use super::old_task::Mods;
 use super::{cal, TDError, establish_connection};
 use cal::{date_or_today, show_type, Repetition};
 use diesel::PgConnection;

@@ -9,8 +9,8 @@ CREATE TABLE users (
   prefix CHARACTER varying(10),
   note CHARACTER varying(1000),
   deleted BOOLEAN DEFAULT false NOT NULL,
-  pwd_hash CHARACTER varying(50) NOT NULL,
-  pwd_salt CHARACTER varying(50) NOT NULL
+  pwd_hash CHARACTER VARYING(150) NOT NULL,
+  pwd_salt BYTEA NOT NULL
 
 );
 SELECT diesel_manage_updated_at('users');

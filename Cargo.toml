@@ -33,4 +33,3 @@ uuid = { version = "0.8", features = ["serde", "v4"] }
 
 rust-argon2 = "0.8"
 getrandom = "0.2"
-proc_macro = "1.15.0"

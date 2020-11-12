@@ -1,6 +1,5 @@
 use diesel::prelude::*;
 use diesel::PgConnection;
-use chrono::{DateTime, Utc};
 
 use crate::models::item::{NewItem, Item, ItemResponse, ItemFilter, ItemVec};
 use crate::models::reference::{NewItemRef, ItemRef};
@@ -19,7 +18,7 @@ pub fn get_items(
     refs: vec![]
   };
 
-  let mut item_limit = match filters.limit {
+  let item_limit = match filters.limit {
     Some(limit) => limit,
     None => 2000
   };
@@ -66,7 +65,7 @@ pub fn get_items(
     (Some(start), Some(end)) => {
       let mut real_start = start;
       let mut real_end = end;
-      if (start > end) {
+      if start > end {
         // honestly let's just throw a 401 here
         real_start = end;
         real_end = start;
@@ -92,7 +91,7 @@ pub fn get_items(
     (Some(start), Some(end)) => {
       let mut real_start = start;
       let mut real_end = end;
-      if (start > end) {
+      if start > end {
         // honestly let's just throw a 401 here
         real_start = end;
         real_end = start;

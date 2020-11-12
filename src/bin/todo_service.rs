@@ -15,7 +15,7 @@ use diesel::PgConnection;
 type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 use to_do::actions;
-use to_do::models::{task, item, reference};
+use to_do::models::{item, reference, user};
 
 embed_migrations!();
 
@@ -134,6 +134,48 @@ async fn delete_item(
   Ok(HttpResponse::Ok().body(format!("Successfully deleted item #{}", item_id)))
 }
 
+#[post("/user/new")]
+async fn create_user(
+  pool: web::Data<DbPool>,
+  form: web::Json<user::NewUserRequest>
+) -> Result<HttpResponse, Error> {
+  let conn = pool.get().expect("couldn't get db connection from pool");
+  let mut request_body = form.into_inner();
+
+  request_body.user.pwd_hash = None;
+  request_body.user.pwd_salt = None;
+  let new_user: user::User =
+    web::block(move || actions::user::create_user(&conn, request_body.user, request_body.password))
+      .await
+      .map_err(|e| {
+        eprintln!("{}", e);
+        HttpResponse::InternalServerError().finish()
+      })?;
+
+  Ok(HttpResponse::Ok().body(format!(
+    "Successfully created new user {} {}",
+    new_user.firstname, new_user.lastname
+  )))
+}
+
+#[get("/user/login")]
+async fn login_user(
+  pool: web::Data<DbPool>,
+  query: web::Query<user::LoginRequest>
+) -> Result<HttpResponse, Error> {
+  let conn = pool.get().expect("couldn't get db connection from pool");
+  let user: user::LoginRequest = query.into_inner();
+
+  let login = web::block(move || actions::user::login_user(user.id, user.password, &conn))
+    .await
+    .map_err(|e| {
+      eprintln!("{}", e);
+      HttpResponse::InternalServerError().finish()
+    })?;
+
+  Ok(HttpResponse::Ok().body(format!("Login {}", login)))
+}
+
 pub fn run_migrations(conn: &PgConnection) {
   let _ = diesel_migrations::run_pending_migrations(&*conn);
 }
@@ -165,7 +207,7 @@ async fn main() -> Result<(), std::io::Error> {
   HttpServer::new(move || {
     App::new()
       .wrap(
-        Cors::new()
+        Cors::default()
           .allowed_origin("http://localhost:4200")
           // .allowed_origin("*")
           // .send_wildcard()
@@ -173,7 +215,6 @@ async fn main() -> Result<(), std::io::Error> {
           .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
           .allowed_header(header::CONTENT_TYPE)
           .max_age(3600)
-          .finish()
       )
       // set up DB pool to be used with web::Data<Pool> extractor
       .data(pool.clone())
@@ -182,6 +223,8 @@ async fn main() -> Result<(), std::io::Error> {
       .service(add_item)
       .service(get_item_by_id)
       .service(get_related_by_id)
+      .service(create_user)
+      .service(login_user)
   })
   .bind(&addr)?
   .run()

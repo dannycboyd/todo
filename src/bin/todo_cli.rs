@@ -1,6 +1,5 @@
 use std::io;
 extern crate chrono;
-use chrono::DateTime;
 
 extern crate to_do;
 use to_do::async_direct_cmd::{AsyncCmd, Args};
@@ -31,18 +30,18 @@ fn run() -> Result<(), TDError> {
       Ok(Args::List) => cmdline.list_all(),
       Ok(Args::Show(rep, when)) => cmdline.show(rep, when), // this needs to change so we can see period around [date]
       Ok(Args::Mods(id, mods)) => cmdline.modify(id, mods),
-      Ok(Args::Detail(id)) => cmdline.detail(id),
-      Ok(Args::Do(id, date, finished)) => cmdline.do_task(id, date, finished),
+      // Ok(Args::Detail(id)) => cmdline.detail(id),
+      // Ok(Args::Do(id, date, finished)) => cmdline.do_task(id, date, finished),
       Ok(Args::Help(cmd)) => Ok(detailed_help(cmd)),
       Ok(Args::Quit) => break,
       Err(_e) => {
         match fallback_parser.parse(&cmd_raw) {
           Ok(cmd) => detailed_help(Some(cmd)),
-          Err(_) => detailed_help(None),
+          Err(_) => detailed_help(None)
         };
         Ok(())
       }
-      _ => Ok(()),
+      _ => Ok(())
     };
 
     // handles error inside the above
