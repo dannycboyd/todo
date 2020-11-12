@@ -1,8 +1,14 @@
+#![allow(unused_parens, unused_braces)]
 use std::str::FromStr;
-use crate::task::{RawTaskItem, Mods};
+use crate::old_task::{RawTaskItem, Mod, Mods};
 use crate::cal::Repetition;
 
+use crate::models::item::{NewItem};
 use crate::async_direct_cmd::{Args};
+
+use chrono::{DateTime, NaiveDateTime};
+
+// let date_parse_str = String::from();
 
 grammar;
 
@@ -52,6 +58,13 @@ pub Words: String = {
     "`" <list:WordList> "`" => list.join(" ")
 }
 
+RFC2822: Option<NaiveDateTime> = {
+    <w:r"\d{4} [A-Za-z]{3} \d{2} \d{2}:\d{2}:\d{2} \+\d{4}"> => DateTime::parse_from_str(w, "%Y %b %d %H:%M:%S %z").map(|v| {
+        println!("{}", v);
+        v.naive_utc()
+    }).ok()
+}
+
 WordList: Vec<String> = {
     <list:WordList> <w:Word> => {
         let mut list = list;
@@ -74,7 +87,8 @@ True: bool = {
 }
 
 False: bool = {
-    "0" => false
+    "0" => false,
+    "f" => false
 }
 
 Bool: bool = {
@@ -82,26 +96,41 @@ Bool: bool = {
     <f:False> => f
 }
 
-Task: (Vec<u32>, String, String, Repetition) = {
-    <date:Date> <rep:Repeats> <title:Words> <desc:Words> => (date, title, desc, rep),
-    <date:Date> <title:Words> <desc:Words> => (date, title, desc, Repetition::Weekly)
+// Task: (Vec<u32>, String, String, Repetition) = {
+//     <date:Date> <rep:Repeats> <title:Words> <desc:Words> => (date, title, desc, rep),
+//     <date:Date> <title:Words> <desc:Words> => (date, title, desc, Repetition::Weekly)
+// }
+
+// RawTask: RawTaskItem = {
+//     <task:RawTask> <start:Date> => { let mut task = task; task.start = start; task },
+//     <task:RawTask> <rep:RepRaw> => { let mut task = task; task.repetition = String::from(rep); task },
+//     <task:RawTask> <title:Words> <note:Words> => { let mut task = task; task.title = title; task.note = note; task },
+//     <task:RawTask> "t:" <title:Words> => { let mut task = task; task.title = title; task },
+//     <task:RawTask> "n:" <note:Words> => { let mut task = task; task.note = note; task },
+//     () => { RawTaskItem::new_empty() }
+// }
+
+NewItem: NewItem = {
+    <item:NewItem> "start" <start:RFC2822> => { let mut item = item; item.start_d = start; item },
+    <item:NewItem> "end" <end:RFC2822> => { let mut item = item; item.end_d = end; item },
+    <item:NewItem> <rep:RepRaw> => { let mut item = item; item.repeats = Some(String::from(rep)); item },
+    <item:NewItem> <title:Words> <note:Words> => { let mut item = item; item.title = title; item.note = Some(note); item },
+    <item:NewItem> "cal" => { let mut item = item; item.cal = Some(true); item },
+    <item:NewItem> "todo" => { let mut item = item; item.todo = Some(true); item },
+    <item:NewItem> "journal" => { let mut item = item; item.journal = Some(true); item },
+    () => { NewItem::new() }
 }
 
-RawTask: RawTaskItem = {
-    <task:RawTask> <start:Date> => { let mut task = task; task.start = start; task },
-    <task:RawTask> <rep:RepRaw> => { let mut task = task; task.repetition = String::from(rep); task },
-    <task:RawTask> <title:Words> <note:Words> => { let mut task = task; task.title = title; task.note = note; task },
-    <task:RawTask> "t:" <title:Words> => { let mut task = task; task.title = title; task },
-    <task:RawTask> "n:" <note:Words> => { let mut task = task; task.note = note; task },
-    () => { RawTaskItem::new_empty() }
-}
-
-Modifications: Vec<Mods> = {
-    <mods:Modifications> <start:Date> => { let mut mods = mods; mods.push(Mods::Start(start)); mods },
-    <mods:Modifications> <rep:Repeats> => { let mut mods = mods; mods.push(Mods::Rep(rep)); mods },
-    <mods:Modifications> "t:" <title:Words> => { let mut mods = mods; mods.push(Mods::Title(title)); mods },
-    <mods:Modifications> "n:" <note:Words> => { let mut mods = mods; mods.push(Mods::Note(note)); mods },
-    () => { vec![] }
+Modifications: Mods = {
+    <mods:Modifications> "start" <start:RFC2822> => { let mut mods = mods; mods.push(Mod::Start(start)); mods },
+    <mods:Modifications> "end" <end:RFC2822> => { let mut mods = mods; mods.push(Mod::End(end)); mods },
+    <mods:Modifications> <rep:RepRaw> => { let mut mods = mods; mods.push(Mod::Rep(String::from(rep))); mods },
+    <mods:Modifications> "t:" <title:Words> => { let mut mods = mods; mods.push(Mod::Title(title)); mods },
+    <mods:Modifications> "n:" <note:Words> => { let mut mods = mods; mods.push(Mod::Note(note)); mods },
+    <mods:Modifications> "cal" <value:Bool> => { let mut mods = mods; mods.push(Mod::Cal(value)); mods },
+    <mods:Modifications> "journal" <value:Bool> => { let mut mods = mods; mods.push(Mod::Journal(value)); mods },
+    <mods:Modifications> "todo" <value:Bool> => { let mut mods = mods; mods.push(Mod::Todo(value)); mods },
+    () => { Mods::new() }
 }
 
 CmdName = {
@@ -124,7 +153,7 @@ pub Recovery: String = {
 }
 
 pub Cmd: Args = {
-    "make" <raw:RawTask> => { Args::MakeRaw(raw) },
+    "make" <item:NewItem> => { Args::MakeRaw(item) },
     "mod" <id:Num> <modifs:Modifications> => { Args::Mods(id, modifs) },
     "show" <when:Period> => Args::Show(when.0, when.1),
     "detail" <id:Num> => { Args::Detail(id) },

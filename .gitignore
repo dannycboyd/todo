@@ -1,3 +1,9 @@
-target/
 **/*.rs.bk
 caldata/
+dumps/
+notes/
+target/
+.env
+.vscode
+env.sh
+rls*.log

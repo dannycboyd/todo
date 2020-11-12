@@ -1,0 +1,9 @@
+space_before_fn_sig_paren = true
+binop_separator = "Front"
+reorder_imports = false
+reorder_modules = false
+trailing_comma = "Never"
+merge_derives = true
+merge_imports = true
+fn_params_layout = "Compressed"
+ignore = ['./src/schema.rs', './src/task_item.rs']
