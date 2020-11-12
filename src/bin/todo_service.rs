@@ -3,7 +3,7 @@ extern crate to_do;
 
 use actix_cors::Cors;
 use actix_web::{
-  get, http::header, middleware, post, delete, web, App, Error, HttpResponse, HttpServer,
+  get, http::header, middleware, post, delete, web, App, Error, HttpResponse, HttpServer
 };
 use diesel::r2d2::{self, ConnectionManager};
 
@@ -25,7 +25,7 @@ embed_migrations!();
 #[get("/items/get")] // this needs some better controls on it. Pagination? Time segments?
 async fn get_items(
   filters: web::Query<item::ItemFilter>,
-  pool: web::Data<DbPool>,
+  pool: web::Data<DbPool>
 ) -> Result<HttpResponse, Error> {
   let filters = filters.into_inner();
   let conn = pool.get().expect("couldn't get db connection from pool");
@@ -42,7 +42,7 @@ async fn get_items(
 #[get("/item/{item_id}")]
 async fn get_item_by_id(
   pool: web::Data<DbPool>,
-  path_id: web::Path<i32>,
+  path_id: web::Path<i32>
 ) -> Result<HttpResponse, Error> {
   let conn = pool.get().expect("couldn't get db connection from pool");
   let item_id = path_id.into_inner(); // https://chrismcg.com/2019/04/30/deserializing-optional-datetimes-with-serde/ this link seems outdated, works ok without custom parse
@@ -66,7 +66,7 @@ async fn get_item_by_id(
 #[get("/item/related/{item_id}")] // This is doing what the get item by id should be doing.
 async fn get_related_by_id(
   pool: web::Data<DbPool>,
-  path_id: web::Path<i32>,
+  path_id: web::Path<i32>
 ) -> Result<HttpResponse, Error> {
   let conn = pool.get().expect("couldn't get db connection from pool");
   let item_id = path_id.into_inner();
@@ -91,13 +91,13 @@ async fn get_related_by_id(
 #[derive(serde::Deserialize)]
 pub struct AddItem {
   item: item::NewItemTz,
-  refs: Vec<reference::NewItemRef>,
+  refs: Vec<reference::NewItemRef>
 }
 
 #[post("/item")]
 async fn add_item(
   pool: web::Data<DbPool>,
-  form: web::Json<AddItem>,
+  form: web::Json<AddItem>
 ) -> Result<HttpResponse, Error> {
   let conn = pool.get().expect("couldn't get db connection from pool");
 
@@ -120,7 +120,7 @@ async fn add_item(
 #[delete("/item/{item_id}")]
 async fn delete_item(
   pool: web::Data<DbPool>,
-  path_id: web::Path<i32>,
+  path_id: web::Path<i32>
 ) -> Result<HttpResponse, Error> {
   let conn = pool.get().expect("couldn't get db connection from pool");
   let item_id = path_id.into_inner();
@@ -173,7 +173,7 @@ async fn main() -> Result<(), std::io::Error> {
           .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
           .allowed_header(header::CONTENT_TYPE)
           .max_age(3600)
-          .finish(),
+          .finish()
       )
       // set up DB pool to be used with web::Data<Pool> extractor
       .data(pool.clone())

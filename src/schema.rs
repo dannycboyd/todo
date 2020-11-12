@@ -23,28 +23,27 @@ table! {
         journal -> Bool,
         todo -> Bool,
         cal -> Bool,
+        user_id -> Nullable<Int4>,
     }
 }
 
 table! {
-    task_completions (id) {
+    users (id) {
         id -> Int4,
-        task_id -> Int4,
-        date -> Date,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+        firstname -> Varchar,
+        lastname -> Varchar,
+        prefix -> Nullable<Varchar>,
+        note -> Nullable<Varchar>,
+        deleted -> Bool,
     }
 }
 
-table! {
-    tasks (id) {
-        id -> Int4,
-        start -> Date,
-        repeats -> Bpchar,
-        title -> Varchar,
-        note -> Varchar,
-        finished -> Bool,
-    }
-}
+joinable!(items -> users (user_id));
 
-joinable!(task_completions -> tasks (task_id));
-
-allow_tables_to_appear_in_same_query!(item_references, items, task_completions, tasks,);
+allow_tables_to_appear_in_same_query!(
+    item_references,
+    items,
+    users,
+);

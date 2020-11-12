@@ -9,19 +9,19 @@ use crate::cal::occurs_between;
 // this is a big function. How can I break it up into something smaller?
 pub fn get_items(
   conn: &PgConnection,
-  filters: ItemFilter,
+  filters: ItemFilter
 ) -> Result<ItemVec, diesel::result::Error> {
   use crate::schema::items::dsl::*;
   use crate::schema::item_references;
 
   let mut response = ItemVec {
     items: vec![],
-    refs: vec![],
+    refs: vec![]
   };
 
   let mut item_limit = match filters.limit {
     Some(limit) => limit,
-    None => 2000,
+    None => 2000
   };
 
   // Start building the DB query
@@ -29,22 +29,22 @@ pub fn get_items(
 
   match filters.deleted {
     Some(value) => query = query.filter(deleted.eq(value)),
-    None => query = query.filter(deleted.eq(false)),
+    None => query = query.filter(deleted.eq(false))
   };
 
   match filters.journal {
     Some(value) => query = query.filter(journal.eq(value)),
-    None => (),
+    None => ()
   };
 
   match filters.cal {
     Some(value) => query = query.filter(cal.eq(value)),
-    None => (),
+    None => ()
   };
 
   match filters.todo {
     Some(value) => query = query.filter(todo.eq(value)),
-    None => (),
+    None => ()
   };
 
   // match filters.creator_id { // add this once we add users
@@ -54,12 +54,12 @@ pub fn get_items(
 
   match filters.item_id {
     Some(search_id) => query = query.filter(id.eq(search_id)),
-    None => println!("no id"),
+    None => println!("no id")
   };
 
   match filters.parent_id {
     Some(search_parent) => query = query.filter(parent_id.eq(search_parent)),
-    None => (),
+    None => ()
   };
 
   match (filters.created_before, filters.created_after) {
@@ -85,7 +85,7 @@ pub fn get_items(
       let end = end.naive_utc();
       query = query.filter(created_at.le(end));
     }
-    _ => (),
+    _ => ()
   }
 
   match (filters.updated_before, filters.updated_after) {
@@ -111,7 +111,7 @@ pub fn get_items(
       let end = end.naive_utc();
       query = query.filter(updated_at.le(end));
     }
-    _ => (),
+    _ => ()
   }
 
   // Load the items from the DB
@@ -125,7 +125,7 @@ pub fn get_items(
     }
     // (Some(start), None) => (), //
     // (None, Some(start)) => (),
-    _ => response.items = selected_items,
+    _ => response.items = selected_items
   };
 
   let mut selected_ids: Vec<i32> = vec![];
@@ -144,28 +144,29 @@ pub fn get_items(
 
       response.refs = refs;
     }
-    _ => (),
+    _ => ()
   }
 
   Ok(response)
 }
 
-// pub fn get_item_by_id(item_id: i32, conn: &PgConnection) -> Result<Option<Item>, diesel::result::Error> {
-//   use crate::schema::items::dsl::*;
+pub fn get_item_by_id(
+  item_id: i32,
+  conn: &PgConnection
+) -> Result<Option<Item>, diesel::result::Error> {
+  use crate::schema::items::dsl::*;
 
-//   let item_query = items.filter(id.eq(item_id));
-//   println!("{}", diesel::debug_query::<diesel::pg::Pg, _>(&item_query));
-//   let item = item_query
-//     .first::<Item>(conn)
-//     .optional()?;
+  let item_query = items.filter(id.eq(item_id));
+  println!("{}", diesel::debug_query::<diesel::pg::Pg, _>(&item_query));
+  let item = item_query.first::<Item>(conn).optional()?;
 
-//   Ok(item)
-// }
+  Ok(item)
+}
 
 pub fn upsert_item(
   new_item: NewItem,
   references: Vec<NewItemRef>,
-  conn: &PgConnection,
+  conn: &PgConnection
 ) -> Result<Item, diesel::result::Error> {
   use crate::schema::items::dsl::*;
   // println!("{:?}", new_item);
@@ -189,7 +190,7 @@ pub fn upsert_item(
 pub fn insert_references(
   new_id: i32,
   mut references: Vec<NewItemRef>,
-  conn: &PgConnection,
+  conn: &PgConnection
 ) -> Result<(), diesel::result::Error> {
   use crate::schema::item_references::dsl::*;
 
@@ -197,13 +198,13 @@ pub fn insert_references(
     match references[i] {
       NewItemRef {
         origin_id: None,
-        child_id: Some(_),
+        child_id: Some(_)
       } => references[i].origin_id = Some(new_id),
       NewItemRef {
         origin_id: Some(_),
-        child_id: None,
+        child_id: None
       } => references[i].child_id = Some(new_id),
-      _ => (),
+      _ => ()
     }
   }
 
@@ -223,7 +224,7 @@ pub fn delete_item_by_id(item_id: i32, conn: &PgConnection) -> Result<(), diesel
 
 pub fn get_parents_by_child_id(
   item_id: i32,
-  conn: &PgConnection,
+  conn: &PgConnection
 ) -> Result<Vec<Item>, diesel::result::Error> {
   use crate::schema::item_references;
 
@@ -238,7 +239,7 @@ pub fn get_parents_by_child_id(
 
 pub fn get_children_by_parent_id(
   item_id: i32,
-  conn: &PgConnection,
+  conn: &PgConnection
 ) -> Result<Vec<Item>, diesel::result::Error> {
   use crate::schema::item_references;
 
@@ -253,7 +254,7 @@ pub fn get_children_by_parent_id(
 
 pub fn get_references_by_id(
   item_id: i32,
-  conn: &PgConnection,
+  conn: &PgConnection
 ) -> Result<Option<ItemResponse>, diesel::result::Error> {
   let item = get_item_by_id(item_id, conn)?;
 
@@ -265,7 +266,7 @@ pub fn get_references_by_id(
       item_id: item_id,
       item: item,
       parents: parents,
-      children: children,
+      children: children
     };
     Ok(Some(response))
   } else {

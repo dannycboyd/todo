@@ -3,11 +3,8 @@
 // Since the update to diesel none of this needs to be async
 use super::old_task::{RawTaskItem, Mod, Mods};
 use super::{cal, TDError, establish_connection};
-
+use cal::{date_or_today, show_type, Repetition};
 use diesel::PgConnection;
-use super::models::{task, task_completions};
-use task::{Task, NewTask, TaskUpdate};
-use task_completions::{Completion, NewCompletion};
 
 use super::actions::item;
 use super::models::item::{NewItem, Item, ItemFilter};
@@ -20,7 +17,7 @@ pub enum Args {
   MakeRaw(NewItem),
   Mods(i32, Mods),
   // Save,
-  Show(cal::Repetition, Option<Vec<u32>>),
+  Show(Repetition, Option<Vec<u32>>),
   Detail(i32),
   NoOp,
   Quit
@@ -50,35 +47,35 @@ impl AsyncCmd {
    * get all tasks and display them for a given chunk of time.
    * simplify this
    */
-  pub fn show(&self, kind: cal::Repetition, date_raw: Option<Vec<u32>>) -> Result<(), TDError> {
-    use super::schema::tasks::dsl::*;
+  pub fn show(&self, kind: Repetition, date_raw: Option<Vec<u32>>) -> Result<(), TDError> {
+    use super::schema::items::dsl::*;
     use diesel::prelude::*;
 
-    let rows = tasks.load::<Task>(&self.connection)?;
-    let start_date = cal::date_or_today(date_raw);
-    Ok(cal::show_type(kind, start_date, rows))
+    let rows = items.load::<Item>(&self.connection)?;
+    let start_date = date_or_today(date_raw);
+    Ok(show_type(kind, start_date, rows))
   }
 
   // use actions here
-  pub fn detail(&self, search_id: i32) -> Result<(), TDError> {
-    use super::schema::tasks::dsl::*;
-    use diesel::prelude::*;
+  // pub fn detail(&self, search_id: i32) -> Result<(), TDError> {
+  //   use super::schema::tasks::dsl::*;
+  //   use diesel::prelude::*;
 
-    let found_task = tasks
-      .filter(id.eq(search_id))
-      .limit(1)
-      .load::<Task>(&self.connection)?;
-    let found_completions: Vec<Completion> =
-      Completion::belonging_to(&found_task).load(&self.connection)?;
+  //   let found_task = tasks
+  //     .filter(id.eq(search_id))
+  //     .limit(1)
+  //     .load::<Task>(&self.connection)?;
+  //   let found_completions: Vec<Completion> =
+  //     Completion::belonging_to(&found_task).load(&self.connection)?;
 
-    if found_task.len() > 0 {
-      println!("{}", found_task[0]);
-      for completion in found_completions {
-        println!("{}", completion.get_date())
-      }
-    }
-    Ok(())
-  }
+  //   if found_task.len() > 0 {
+  //     println!("{}", found_task[0]);
+  //     for completion in found_completions {
+  //       println!("{}", completion.get_date())
+  //     }
+  //   }
+  //   Ok(())
+  // }
 
   pub fn list_all(&self) -> Result<(), TDError> {
     let all_items = item::get_items(&self.connection, ItemFilter::new())?;
@@ -109,33 +106,33 @@ impl AsyncCmd {
   }
 
   // update this
-  pub fn do_task(
-    &self,
-    search_id: i32,
-    date: Option<Vec<u32>>,
-    finished: bool
-  ) -> Result<(), TDError> {
-    use super::schema::{task_completions};
-    use diesel::prelude::*;
+  // pub fn do_task(
+  //   &self,
+  //   search_id: i32,
+  //   date: Option<Vec<u32>>,
+  //   finished: bool
+  // ) -> Result<(), TDError> {
+  //   use super::schema::{task_completions};
+  //   use diesel::prelude::*;
 
-    let date = cal::date_or_today(date);
-    let _inserted_task = diesel::insert_into(task_completions::table)
-      .values(&NewCompletion::new(search_id, date))
-      .get_result::<Completion>(&self.connection)?; // get_result needs to know what returning type to use.
+  //   let date = cal::date_or_today(date);
+  //   let _inserted_task = diesel::insert_into(task_completions::table)
+  //     .values(&NewCompletion::new(search_id, date))
+  //     .get_result::<Completion>(&self.connection)?; // get_result needs to know what returning type to use.
 
-    println!("Completed task {} for date {}", search_id, date);
+  //   println!("Completed task {} for date {}", search_id, date);
 
-    if finished {
-      use super::schema::tasks::dsl::*;
-      let task = diesel::update(tasks.find(search_id))
-        .set(finished.eq(true))
-        .get_result::<Task>(&self.connection)?;
-      println!(
-        "Marked task {} as finished!\n{}",
-        search_id,
-        task.to_string()
-      );
-    }
-    Ok(())
-  }
+  //   if finished {
+  //     use super::schema::tasks::dsl::*;
+  //     let task = diesel::update(tasks.find(search_id))
+  //       .set(finished.eq(true))
+  //       .get_result::<Task>(&self.connection)?;
+  //     println!(
+  //       "Marked task {} as finished!\n{}",
+  //       search_id,
+  //       task.to_string()
+  //     );
+  //   }
+  //   Ok(())
+  // }
 }

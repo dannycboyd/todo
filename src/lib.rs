@@ -12,6 +12,7 @@ use cal::Repetition;
 use url;
 
 extern crate chrono;
+extern crate argon2;
 
 // diesel schemas
 #[macro_use]

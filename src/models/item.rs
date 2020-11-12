@@ -26,7 +26,8 @@ pub struct Item {
   pub parent_id: Option<i32>,
   pub journal: bool,
   pub todo: bool,
-  pub cal: bool
+  pub cal: bool,
+  pub user_id: Option<i32>
 }
 
 impl Item {
