@@ -15,7 +15,7 @@ use diesel::PgConnection;
 type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 use to_do::actions;
-use to_do::models::{item, reference, user};
+use to_do::models::{item, reference, user, responses};
 
 embed_migrations!();
 
@@ -131,7 +131,12 @@ async fn delete_item(
       eprintln!("{}", e);
       HttpResponse::InternalServerError().finish()
     })?;
-  Ok(HttpResponse::Ok().body(format!("Successfully deleted item #{}", item_id)))
+  let res = responses::Response {
+    id: None,
+    message: format!("Successfully deleted item #{}", item_id),
+    value: Some(item_id)
+  };
+  Ok(HttpResponse::Ok().json(res))
 }
 
 #[post("/user/new")]
@@ -151,11 +156,15 @@ async fn create_user(
         eprintln!("{}", e);
         HttpResponse::InternalServerError().finish()
       })?;
-
-  Ok(HttpResponse::Ok().body(format!(
-    "Successfully created new user {} {}",
-    new_user.firstname, new_user.lastname
-  )))
+  let res = responses::Response {
+    id: None,
+    message: format!(
+      "Successfully created new user {} {}",
+      new_user.firstname, new_user.lastname
+    ),
+    value: None
+  };
+  Ok(HttpResponse::Ok().json(res))
 }
 
 #[get("/user/login")]
@@ -225,6 +234,7 @@ async fn main() -> Result<(), std::io::Error> {
       .service(get_related_by_id)
       .service(create_user)
       .service(login_user)
+      .service(delete_item)
   })
   .bind(&addr)?
   .run()

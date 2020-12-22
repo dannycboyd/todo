@@ -1,6 +1,6 @@
 #![allow(unused_parens, unused_braces)]
 use std::str::FromStr;
-use crate::old_task::{RawTaskItem, Mod, Mods};
+use crate::old_task::{Mod, Mods};
 use crate::cal::Repetition;
 
 use crate::models::item::{NewItem};
