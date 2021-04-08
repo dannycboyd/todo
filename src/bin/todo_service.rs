@@ -3,7 +3,7 @@ extern crate to_do;
 
 use actix_cors::Cors;
 use actix_web::{
-  get, http::header, middleware, post, delete, web, App, Error, HttpResponse, HttpServer
+  App, Error, HttpResponse, HttpServer, delete, get, http::header, middleware, post, web
 };
 use diesel::r2d2::{self, ConnectionManager};
 
@@ -12,7 +12,10 @@ use dotenv::dotenv;
 #[macro_use]
 extern crate diesel_migrations;
 use diesel::PgConnection;
-type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
+// use item::NewItem;
+use reference::NewItemRef;
+// type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
+use to_do::{DbPool, get_pool_connection};
 
 use to_do::actions;
 use to_do::models::{item, reference, user, responses};
@@ -28,7 +31,7 @@ async fn get_items(
   pool: web::Data<DbPool>
 ) -> Result<HttpResponse, Error> {
   let filters = filters.into_inner();
-  let conn = pool.get().expect("couldn't get db connection from pool");
+  let conn = get_pool_connection(pool);
   let items = web::block(move || actions::item::get_items(&conn, filters))
     .await
     .map_err(|e| {
@@ -44,7 +47,7 @@ async fn get_item_by_id(
   pool: web::Data<DbPool>,
   path_id: web::Path<i32>
 ) -> Result<HttpResponse, Error> {
-  let conn = pool.get().expect("couldn't get db connection from pool");
+  let conn = get_pool_connection(pool);
   let item_id = path_id.into_inner(); // https://chrismcg.com/2019/04/30/deserializing-optional-datetimes-with-serde/ this link seems outdated, works ok without custom parse
   println!("get item by id {}", item_id);
 
@@ -68,7 +71,7 @@ async fn get_related_by_id(
   pool: web::Data<DbPool>,
   path_id: web::Path<i32>
 ) -> Result<HttpResponse, Error> {
-  let conn = pool.get().expect("couldn't get db connection from pool");
+  let conn = get_pool_connection(pool);
   let item_id = path_id.into_inner();
 
   let item = web::block(move || actions::item::get_references_by_id(item_id, &conn))
@@ -88,10 +91,48 @@ async fn get_related_by_id(
   }
 }
 
+#[post("/references/")]
+async fn post_references(
+  pool: web::Data<DbPool>,
+  form: web::Json<Vec<NewItemRef>>
+) -> Result<HttpResponse, Error> {
+  let conn = get_pool_connection(pool);
+
+  let refs = form.into_inner();
+
+  let refs = web::block(move || actions::item::insert_references(refs, &conn))
+    .await
+    .map_err(|e| {
+      eprintln!("{}", e);
+      HttpResponse::InternalServerError().finish()
+    })?;
+
+  Ok(HttpResponse::Ok().json(refs))
+}
+
+#[delete("/references")]
+async fn delete_references(
+  pool: web::Data<DbPool>,
+  form: web::Json<Vec<NewItemRef>>
+) -> Result<HttpResponse, Error> {
+  let conn = get_pool_connection(pool);
+
+  let refs = form.into_inner();
+
+  let refs = web::block(move || actions::item::delete_references(refs, &conn))
+    .await
+    .map_err(|e| {
+      eprintln!("{}", e);
+      HttpResponse::InternalServerError().finish()
+    })?;
+  Ok(HttpResponse::Ok().json(refs))
+}
+
 #[derive(serde::Deserialize)]
 pub struct AddItem {
   item: item::NewItemTz,
-  refs: Vec<reference::NewItemRef>
+  refs: Vec<reference::NewItemRef>,
+  tags: Vec<String>
 }
 
 #[post("/item")]
@@ -99,15 +140,16 @@ async fn add_item(
   pool: web::Data<DbPool>,
   form: web::Json<AddItem>
 ) -> Result<HttpResponse, Error> {
-  let conn = pool.get().expect("couldn't get db connection from pool");
+  let conn = get_pool_connection(pool);
 
   let request_body = form.into_inner();
   let new_refs = request_body.refs;
+  let tags = request_body.tags;
 
   let item = item::NewItem::from(request_body.item);
 
   // use web::block to offload blocking Diesel code without blocking server thread
-  let new_item = web::block(move || actions::item::upsert_item(item, new_refs, &conn))
+  let new_item = web::block(move || actions::item::upsert_item(item, new_refs, tags, &conn))
     .await
     .map_err(|e| {
       eprintln!("{}", e);
@@ -122,7 +164,7 @@ async fn delete_item(
   pool: web::Data<DbPool>,
   path_id: web::Path<i32>
 ) -> Result<HttpResponse, Error> {
-  let conn = pool.get().expect("couldn't get db connection from pool");
+  let conn = get_pool_connection(pool);
   let item_id = path_id.into_inner();
 
   let _item = web::block(move || actions::item::delete_item_by_id(item_id, &conn))
@@ -144,7 +186,7 @@ async fn create_user(
   pool: web::Data<DbPool>,
   form: web::Json<user::NewUserRequest>
 ) -> Result<HttpResponse, Error> {
-  let conn = pool.get().expect("couldn't get db connection from pool");
+  let conn = get_pool_connection(pool);
   let mut request_body = form.into_inner();
 
   request_body.user.pwd_hash = None;
@@ -172,7 +214,7 @@ async fn login_user(
   pool: web::Data<DbPool>,
   query: web::Query<user::LoginRequest>
 ) -> Result<HttpResponse, Error> {
-  let conn = pool.get().expect("couldn't get db connection from pool");
+  let conn = get_pool_connection(pool);
   let user: user::LoginRequest = query.into_inner();
 
   let login = web::block(move || actions::user::login_user(user.id, user.password, &conn))
@@ -232,6 +274,7 @@ async fn main() -> Result<(), std::io::Error> {
       .service(add_item)
       .service(get_item_by_id)
       .service(get_related_by_id)
+      .service(post_references)
       .service(create_user)
       .service(login_user)
       .service(delete_item)

@@ -80,7 +80,7 @@ impl AsyncCmd {
   pub fn list_all(&self) -> Result<(), TDError> {
     let all_items = item::get_items(&self.connection, ItemFilter::new())?;
 
-    for found_item in all_items.items {
+    for found_item in all_items {
       println!("{}\n", found_item.to_string());
     }
     Ok(())
@@ -88,7 +88,7 @@ impl AsyncCmd {
 
   pub fn upsert(&self, raw: NewItem) -> Result<(), TDError> {
     // println!("{:?}", raw);
-    let item = item::upsert_item(raw, vec![], &self.connection)?;
+    let item = item::upsert_item(raw, vec![], vec![], &self.connection)?;
     Ok(println!("Inserted new item:\n\t{}", item.to_string()))
   }
 
@@ -98,7 +98,7 @@ impl AsyncCmd {
       let mut update = NewItem::from(mods);
       update.id = Some(search_id);
 
-      let item = item::upsert_item(update, vec![], &self.connection)?;
+      let item = item::upsert_item(update, vec![], vec![], &self.connection)?;
       Ok(println!("Modifications done! {}", item.to_string()))
     } else {
       Err(TDError::NoneError)

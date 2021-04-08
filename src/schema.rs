@@ -28,6 +28,16 @@ table! {
 }
 
 table! {
+    tags (id) {
+        id -> Int4,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+        item_id -> Int4,
+        tag -> Varchar,
+    }
+}
+
+table! {
     users (id) {
         id -> Int4,
         created_at -> Timestamp,
@@ -43,9 +53,11 @@ table! {
 }
 
 joinable!(items -> users (user_id));
+joinable!(tags -> items (item_id));
 
 allow_tables_to_appear_in_same_query!(
     item_references,
     items,
+    tags,
     users,
 );

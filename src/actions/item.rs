@@ -1,22 +1,19 @@
-use diesel::prelude::*;
+use diesel::{prelude::*};
 use diesel::PgConnection;
 
-use crate::models::item::{NewItem, Item, ItemResponse, ItemFilter, ItemVec};
+use crate::models::item::{NewItem, Item, ItemResponse, ItemFilter, RefsItem};
 use crate::models::reference::{NewItemRef, ItemRef};
+use crate::models::tags::{Tag, NewItemTag};
 use crate::cal::occurs_between;
 
 // this is a big function. How can I break it up into something smaller?
 pub fn get_items(
   conn: &PgConnection,
   filters: ItemFilter
-) -> Result<ItemVec, diesel::result::Error> {
+) -> Result<Vec<RefsItem>, diesel::result::Error> {
   use crate::schema::items::dsl::*;
   use crate::schema::item_references;
-
-  let mut response = ItemVec {
-    items: vec![],
-    refs: vec![]
-  };
+  use crate::schema::tags as tags_table;
 
   let item_limit = match filters.limit {
     Some(limit) => limit,
@@ -113,23 +110,50 @@ pub fn get_items(
     _ => ()
   }
 
+  match filters.tags {
+    Some(filter_tags) => {
+      let split_tags: Vec<&str> = filter_tags.split(",").collect();
+      println!("{:?}", split_tags);
+      let allowed_ids = tags_table::table
+        .filter(tags_table::tag.eq_any(&split_tags))
+        .distinct()
+        .select(tags_table::item_id)
+        .load::<i32>(conn)?;
+      query = query.filter(id.eq_any(allowed_ids));
+    }
+
+    None => ()
+  }
+
   // Load the items from the DB
   let selected_items = query.load::<Item>(conn)?;
 
   // post-load modifications (Date filtering)
 
-  match (filters.occurs_after, filters.occurs_before) {
-    (Some(start), Some(end)) => {
-      response.items = occurs_between(selected_items, start, end);
-    }
+  let mut selected_ids: Vec<i32> = vec![];
+  let mut response: Vec<RefsItem> = match (filters.occurs_after, filters.occurs_before) {
+    (Some(start), Some(end)) => occurs_between(selected_items, start, end),
     // (Some(start), None) => (), //
     // (None, Some(start)) => (),
-    _ => response.items = selected_items
-  };
+    _ => selected_items
+  }
+  .into_iter()
+  .map(|i| {
+    selected_ids.push(i.id);
+    RefsItem::from(i)
+  })
+  .collect();
 
-  let mut selected_ids: Vec<i32> = vec![];
-  for i in 0..response.items.len() {
-    selected_ids.push(response.items[i].id);
+  let tags_vec = tags_table::table
+    .filter(tags_table::item_id.eq_any(&selected_ids))
+    .load::<Tag>(conn)?;
+
+  for i in tags_vec {
+    let mut index = 0;
+    while index < response.len() && response[index].id != i.item_id {
+      index += 1;
+    }
+    response[index].tags.push(i);
   }
 
   match filters.with_related {
@@ -141,7 +165,20 @@ pub fn get_items(
       // println!("{}", diesel::debug_query::<diesel::pg::Pg, _>(&refs));
       let refs = refs.load::<ItemRef>(conn)?;
 
-      response.refs = refs;
+      for i in refs {
+        let mut index = 0;
+        while index < response.len() && response[index].id != i.origin_id {
+          index += 1;
+        }
+        if index < response.len() {
+          response[index].references.push(i);
+        } else {
+          println!(
+            "Error! no item found with id {}, but reference has ids {}, {}",
+            i.origin_id, i.origin_id, i.child_id
+          );
+        }
+      }
     }
     _ => ()
   }
@@ -164,9 +201,10 @@ pub fn get_item_by_id(
 
 pub fn upsert_item(
   new_item: NewItem,
-  references: Vec<NewItemRef>,
+  mut references: Vec<NewItemRef>,
+  tags: Vec<String>, // I guess for now we delete + reinsert
   conn: &PgConnection
-) -> Result<Item, diesel::result::Error> {
+) -> Result<RefsItem, diesel::result::Error> {
   use crate::schema::items::dsl::*;
   // println!("{:?}", new_item);
 
@@ -177,39 +215,77 @@ pub fn upsert_item(
     .set(&new_item);
   // println!("{}", diesel::debug_query::<diesel::pg::Pg, _>(&our_query));
   let inserted_item = our_query.get_result::<Item>(conn)?;
+  let mut inserted_item = RefsItem::from(inserted_item);
 
   println!("{:?}", references);
   if references.len() > 0 {
-    insert_references(inserted_item.id, references, conn)?;
+    for i in 0..references.len() {
+      match references[i] {
+        NewItemRef {
+          origin_id: None,
+          child_id: Some(_)
+        } => references[i].origin_id = Some(inserted_item.id),
+        NewItemRef {
+          origin_id: Some(_),
+          child_id: None
+        } => references[i].child_id = Some(inserted_item.id),
+        _ => ()
+      }
+    }
+    insert_references(references, conn)?;
+  }
+
+  if tags.len() > 0 {
+    inserted_item.tags = insert_tags(tags, inserted_item.id, conn)?;
   }
 
   Ok(inserted_item)
 }
 
+pub fn insert_tags(
+  tags_values: Vec<String>,
+  parent_id: i32,
+  conn: &PgConnection
+) -> Result<Vec<Tag>, diesel::result::Error> {
+  use crate::schema::tags::dsl::*;
+
+  // let _del_query = diesel::delete(tags.filter(tag.ne_all(item_id))).execute(conn)?;
+  let _del = diesel::delete(tags.filter(item_id.eq(parent_id))).execute(conn)?;
+  let tags_values: Vec<NewItemTag> = tags_values
+    .into_iter()
+    .map(|t| NewItemTag {
+      tag: t,
+      item_id: parent_id
+    })
+    .collect();
+
+  diesel::insert_into(tags)
+    .values(tags_values)
+    .get_results::<Tag>(conn)
+}
+
 pub fn insert_references(
-  new_id: i32,
-  mut references: Vec<NewItemRef>,
+  // new_id: i32,
+  references: Vec<NewItemRef>,
   conn: &PgConnection
 ) -> Result<(), diesel::result::Error> {
   use crate::schema::item_references::dsl::*;
 
-  for i in 0..references.len() {
-    match references[i] {
-      NewItemRef {
-        origin_id: None,
-        child_id: Some(_)
-      } => references[i].origin_id = Some(new_id),
-      NewItemRef {
-        origin_id: Some(_),
-        child_id: None
-      } => references[i].child_id = Some(new_id),
-      _ => ()
-    }
-  }
-
   let _q = diesel::insert_into(item_references)
     .values(references)
     .execute(conn)?;
+  Ok(())
+}
+
+pub fn delete_references(
+  _references: Vec<NewItemRef>,
+  _conn: &PgConnection
+) -> Result<(), diesel::result::Error> {
+  // use crate::schema::item_references::dsl::*;
+
+  // let _q = diesel::delete(item_reference.filter()) // how does this filter work?
+  //   .execute(conn)
+  println!("This function is unimplemented! :D");
   Ok(())
 }
 

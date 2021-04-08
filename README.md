@@ -18,6 +18,8 @@ This is a utility which you can use to create customizably repeating todo lists 
 * Set your environment variables. The `env.sh` file contains the development defaults. Apply them with `source env.sh`.
 * run `diesel setup` to create the database and apply the migrations.
 
+pg_ctlcluster 13 main start
+
 * Run the app or the service `cargo run --bin todo_cli`
 * Run a command:
 ```

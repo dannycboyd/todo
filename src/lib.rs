@@ -6,9 +6,13 @@ pub mod parser_help;
 pub const DEFAULT_FILE: &str = "./caldata.json";
 pub mod task_item;
 pub mod old_task;
+use actix_web::web;
+use r2d2::PooledConnection;
 use serde_json;
 use chrono::NaiveDate;
 use cal::Repetition;
+use diesel::{prelude::*, r2d2::ConnectionManager};
+use diesel::pg::PgConnection;
 use url;
 
 extern crate chrono;
@@ -20,13 +24,15 @@ extern crate diesel;
 extern crate diesel_migrations;
 extern crate dotenv;
 
-use diesel::prelude::*;
-use diesel::pg::PgConnection;
-
 pub mod schema;
 pub mod models;
 pub mod actions; // actix-web action functions
 
+pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
+pub type DbConn = PooledConnection<ConnectionManager<PgConnection>>;
+pub fn get_pool_connection(pool: web::Data<DbPool>) -> DbConn {
+  pool.get().expect("Couldn't get connection from pool!")
+}
 #[derive(Debug)]
 pub enum TDError {
   IOError(String),
@@ -37,7 +43,7 @@ pub enum TDError {
   ConnectionError(String),
   NoneError,
   SerializeError,
-  Quit
+  Quit,
 }
 
 impl std::error::Error for TDError {

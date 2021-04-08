@@ -1,4 +1,5 @@
 use chrono::{NaiveDate, NaiveDateTime, Utc, TimeZone, DateTime};
+// use diesel::update;
 type UtcDateTime = DateTime<Utc>;
 use crate::{Repetition, TaskLike};
 use crate::old_task::{Mod, Mods};
@@ -208,15 +209,129 @@ pub struct ItemVec {
   pub refs: Vec<crate::models::reference::ItemRef>
 }
 
+#[derive(Serialize)]
+pub struct RefsItem {
+  pub id: i32,
+  pub created_at: NaiveDateTime, // not sure if these support timezone. Could be an issue. DB might need to run a to/from UTC function before sending/after recieving objects from the client.
+  pub updated_at: NaiveDateTime,
+  pub start_d: Option<NaiveDateTime>,
+  pub end_d: Option<NaiveDateTime>,
+  pub repeats: String,
+  pub title: String,
+  pub note: Option<String>,
+  pub marked_done: bool, // I'm not sure if we need this, should probably be another table ngl
+  pub deleted: bool,
+  pub parent_id: Option<i32>,
+  pub journal: bool,
+  pub todo: bool,
+  pub cal: bool,
+  pub user_id: Option<i32>,
+
+  pub references: Vec<crate::models::reference::ItemRef>,
+  pub tags: Vec<crate::models::tags::Tag>
+}
+
+impl From<Item> for RefsItem {
+  fn from(item: Item) -> Self {
+    return Self {
+      id: item.id,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      start_d: item.start_d,
+      end_d: item.end_d,
+      repeats: String::from(&item.repeats), // this feels incredibly dumb, shouldn't from/into consume the reference anyway? Why do I need it to survive?
+      title: String::from(&item.title),
+      note: match &item.note {
+        Some(s) => Some(String::from(s)),
+        _ => None
+      },
+      marked_done: item.marked_done,
+      deleted: item.deleted,
+      parent_id: item.parent_id,
+      journal: item.journal,
+      todo: item.todo,
+      cal: item.cal,
+      user_id: item.user_id,
+
+      references: vec![],
+      tags: vec![]
+    };
+  }
+}
+
+impl RefsItem {
+  fn note_or_empty(&self) -> String {
+    match &self.note {
+      Some(note) => note.to_string(),
+      None => String::from("n/a")
+    }
+  }
+}
+
+impl TaskLike for RefsItem {
+  fn get_id(&self) -> i32 {
+    self.id
+  }
+
+  fn formatted_date(&self) -> String {
+    // this is wonky, needs to parse into a timezoned date, since they're in UTC
+    match (self.start_d, self.end_d) {
+      (Some(start), Some(end)) => format!("{} - {}", start, end),
+      (Some(start), None) => format!("{}", start),
+      _ => String::new()
+    }
+  }
+
+  fn get_start(&self) -> Option<NaiveDate> {
+    match self.start_d {
+      Some(dt) => Some(dt.date()),
+      None => None
+    }
+  }
+
+  fn get_rep(&self) -> Repetition {
+    Repetition::from_str(&self.repeats.to_string()).unwrap_or_else(|_| Repetition::Never)
+  }
+
+  fn is_finished(&self) -> bool {
+    self.marked_done
+  }
+
+  // TODO: This isn't finished yet
+  fn get_last_completed(&self) -> Option<&NaiveDate> {
+    None
+  }
+
+  fn to_string(&self) -> String {
+    String::from(format!("{}", self))
+  }
+}
+
+impl Display for RefsItem {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(
+      f,
+      "{id} - {title}\n{range}\n{rep}\nNotes: {note}\nFinished: {finished}",
+      id = self.id,
+      title = self.title,
+      range = self.formatted_date(),
+      rep = self.repeats,
+      note = self.note_or_empty(),
+      finished = self.marked_done
+    )
+  }
+}
+
 // ######################## ITEM FILTER QUERY TYPES
 #[derive(Deserialize)]
 pub struct ItemFilter {
   pub item_id: Option<i32>,    // done
   pub creator_id: Option<i32>, // no users yet
-  pub title_filter: Option<String>,
-  pub body_filter: Option<String>,
+  pub title: Option<String>,
+  pub note: Option<String>,
   pub deleted: Option<bool>,  // done
   pub parent_id: Option<i32>, // done
+  pub tags: Option<String>,   // works
   pub limit: Option<i64>,     // done
   // type
   pub journal: Option<bool>,
@@ -239,9 +354,10 @@ impl ItemFilter {
     ItemFilter {
       item_id: None,
       creator_id: None,
-      title_filter: None,
-      body_filter: None,
+      title: None,
+      note: None,
       deleted: None,
+      tags: None,
       parent_id: None,
       limit: None,
       journal: None,

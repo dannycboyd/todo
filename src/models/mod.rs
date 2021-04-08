@@ -5,3 +5,4 @@ pub mod reference;
 pub mod item;
 pub mod user;
 pub mod responses;
+pub mod tags;

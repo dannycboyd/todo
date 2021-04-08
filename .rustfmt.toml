@@ -3,6 +3,7 @@ binop_separator = "Front"
 reorder_imports = false
 reorder_modules = false
 trailing_comma = "Never"
+tab_spaces = 2
 merge_derives = true
 merge_imports = true
 fn_params_layout = "Compressed"
