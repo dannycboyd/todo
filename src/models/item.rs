@@ -11,11 +11,26 @@ use serde::{Serialize, Deserialize};
 use crate::schema::{items};
 // use crate::models::reference;
 
+/* TODO: This file has too many silly little models in it.
+  Either:
+    * Remove some of these models
+    * Move them into somewhere else and only use them where they're needed.
+
+    Examples:
+    - Item (exactly matches the table)
+    - RefsItem (Item but optional and with reference fields attached. Must be destructured to store)
+      - This should be changed so that all fields are optional. Error handling should be explicit, and the actix-web type checking isn't verbose enough
+    - NewItem (I think this was meant to fill the space of the RefsItem struct)
+    - NewItemTz ()
+    - ItemResponse (Server response item, contains references and item ID and stuff. This should be removed and usages replaced with refsitem)
+    - ItemFilter (Query struct, this should be replaced with RefsItem.)
+*/
+
 #[derive(Queryable, Identifiable, Serialize)] // may want to use AsChangeset here, does funky things with optionals though.
 #[table_name = "items"]
 pub struct Item {
   pub id: i32,
-  pub created_at: NaiveDateTime, // not sure if these support timezone. Could be an issue. DB might need to run a to/from UTC function before sending/after recieving objects from the client.
+  pub created_at: NaiveDateTime, // utc: make sure to translate to UTC before saving.
   pub updated_at: NaiveDateTime,
   pub start_d: Option<NaiveDateTime>,
   pub end_d: Option<NaiveDateTime>,
@@ -42,6 +57,7 @@ impl Item {
 }
 
 impl TaskLike for Item {
+  // TODO: this is the most used part of tasklike for Item. This could be broken out into a separate Trait
   fn get_id(&self) -> i32 {
     self.id
   }
@@ -56,10 +72,7 @@ impl TaskLike for Item {
   }
 
   fn get_start(&self) -> Option<NaiveDate> {
-    match self.start_d {
-      Some(dt) => Some(dt.date()),
-      None => None
-    }
+    self.start_d.map(|dt| dt.date())
   }
 
   fn get_rep(&self) -> Repetition {
@@ -161,20 +174,17 @@ pub struct NewItemTz {
   pub repeats: Option<String>,
   pub title: String,
   pub note: Option<String>,
-  pub marked_done: bool,
-  pub deleted: bool,
-  pub journal: bool,
-  pub todo: bool,
-  pub cal: bool
+  pub marked_done: Option<bool>, // I'm not sure if we need this
+  pub deleted: Option<bool>,
+  pub journal: Option<bool>,
+  pub todo: Option<bool>,
+  pub cal: Option<bool>
 }
 
 // I don't understand how this type signature works, it feels like I'm casting the type backwards from the argument? is that allowed? Compiler says it's ok so ¯\_(ツ)_/¯
 // I think this works because DateTime _requires_ a tz, but it doesn't matter what it is, the functions all work agnostic of the tz
 pub fn opt_utc_to_naive<Tz: TimeZone>(dt_tz: Option<DateTime<Tz>>) -> Option<NaiveDateTime> {
-  match dt_tz {
-    Some(date) => Some(date.naive_utc()),
-    None => None
-  }
+  dt_tz.map(|date| date.naive_utc())
 }
 
 impl From<NewItemTz> for NewItem {
@@ -186,11 +196,11 @@ impl From<NewItemTz> for NewItem {
       repeats: old_item.repeats,
       title: old_item.title,
       note: old_item.note,
-      marked_done: Some(old_item.marked_done),
-      deleted: Some(old_item.deleted),
-      journal: Some(old_item.journal),
-      todo: Some(old_item.todo),
-      cal: Some(old_item.cal)
+      marked_done: old_item.marked_done,
+      deleted: old_item.deleted,
+      journal: old_item.journal,
+      todo: old_item.todo,
+      cal: old_item.cal
     }
   }
 }
@@ -203,23 +213,32 @@ pub struct ItemResponse {
   pub children: Vec<Item>
 }
 
-#[derive(Serialize)]
-pub struct ItemVec {
-  pub items: Vec<Item>,
-  pub refs: Vec<crate::models::reference::ItemRef>
-}
+// #[derive(Serialize)]
+// pub struct ItemVec {
+//   pub items: Vec<Item>,
+//   pub refs: Vec<crate::models::reference::ItemRef>
+// }
 
 #[derive(Serialize)]
+/**
+  This object is the one that should be returned to the client whenever possible, and also
+  what the client will send to us. The `tags` and `references` fields are separate tables, so we need to
+  separate them before this struct touches the DB.
+
+  I need to codify exactly what this is supposed to do. TaskLike impl is getting too wide to be useful,
+  and I (I suspect) have a bunch of extra implementations here that are never called. This strictly should
+  be used for API -> RefsItem -> Item and Item -> RefsItem -> API things, and nothing more.
+*/
 pub struct RefsItem {
   pub id: i32,
-  pub created_at: NaiveDateTime, // not sure if these support timezone. Could be an issue. DB might need to run a to/from UTC function before sending/after recieving objects from the client.
+  pub created_at: NaiveDateTime, // This should be a DateTime, we can turn it into UTC when we need to.
   pub updated_at: NaiveDateTime,
   pub start_d: Option<NaiveDateTime>,
   pub end_d: Option<NaiveDateTime>,
   pub repeats: String,
   pub title: String,
   pub note: Option<String>,
-  pub marked_done: bool, // I'm not sure if we need this, should probably be another table ngl
+  pub marked_done: bool,
   pub deleted: bool,
   pub parent_id: Option<i32>,
   pub journal: bool,
@@ -227,6 +246,8 @@ pub struct RefsItem {
   pub cal: bool,
   pub user_id: Option<i32>,
 
+  // these parts make it more complicated. We send/recieve this with the client and must
+  // translate to Item before talking to the DB
   pub references: Vec<crate::models::reference::ItemRef>,
   pub tags: Vec<crate::models::tags::Tag>
 }
@@ -239,8 +260,8 @@ impl From<Item> for RefsItem {
       updated_at: item.updated_at,
       start_d: item.start_d,
       end_d: item.end_d,
-      repeats: String::from(&item.repeats), // this feels incredibly dumb, shouldn't from/into consume the reference anyway? Why do I need it to survive?
-      title: String::from(&item.title),
+      repeats: item.repeats,
+      title: item.title,
       note: match &item.note {
         Some(s) => Some(String::from(s)),
         _ => None
@@ -268,6 +289,7 @@ impl RefsItem {
   }
 }
 
+// This TaskLike impl is used only for display. Display functions should be moved out into a separate Trait
 impl TaskLike for RefsItem {
   fn get_id(&self) -> i32 {
     self.id
@@ -302,11 +324,13 @@ impl TaskLike for RefsItem {
     None
   }
 
+  // unused
   fn to_string(&self) -> String {
     String::from(format!("{}", self))
   }
 }
 
+// I think this isn't used
 impl Display for RefsItem {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     write!(

@@ -43,7 +43,7 @@ pub enum TDError {
   ConnectionError(String),
   NoneError,
   SerializeError,
-  Quit,
+  Quit
 }
 
 impl std::error::Error for TDError {
@@ -136,6 +136,13 @@ pub fn establish_connection() -> PgConnection {
   PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
 }
 
+/**
+  trait TaskLike
+  Currently, used both for display (for printing in cal) and for filtering in cal.
+  Unfortunately, this usage is split across two structs, and this trait should become two traits.
+  an alternative solution would be to remove the traits and have their references use specific types instead.
+  this would limit duplicate definition/implementation and allow for explicit typing, which I think I want.
+*/
 pub trait TaskLike {
   fn get_id(&self) -> i32;
   fn get_start(&self) -> Option<NaiveDate>;
