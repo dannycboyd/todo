@@ -1,7 +1,7 @@
-use chrono::{NaiveDate, NaiveDateTime, Utc, TimeZone, DateTime};
+use chrono::{NaiveDate, NaiveDateTime, Utc, DateTime};
 // use diesel::update;
 type UtcDateTime = DateTime<Utc>;
-use crate::{Repetition, TaskLike};
+use crate::{Repetition, TDError, TaskLike};
 use crate::old_task::{Mod, Mods};
 use std::str::FromStr;
 use std::fmt;
@@ -21,7 +21,6 @@ use crate::schema::{items};
     - RefsItem (Item but optional and with reference fields attached. Must be destructured to store)
       - This should be changed so that all fields are optional. Error handling should be explicit, and the actix-web type checking isn't verbose enough
     - NewItem (I think this was meant to fill the space of the RefsItem struct)
-    - NewItemTz ()
     - ItemResponse (Server response item, contains references and item ID and stuff. This should be removed and usages replaced with refsitem)
     - ItemFilter (Query struct, this should be replaced with RefsItem.)
 */
@@ -123,7 +122,8 @@ pub struct NewItem {
   pub deleted: Option<bool>,
   pub journal: Option<bool>,
   pub todo: Option<bool>,
-  pub cal: Option<bool>
+  pub cal: Option<bool>,
+  pub user_id: Option<i32>
 }
 
 impl NewItem {
@@ -139,7 +139,8 @@ impl NewItem {
       deleted: None,
       journal: None,
       todo: None,
-      cal: None
+      cal: None,
+      user_id: None
     }
   }
 }
@@ -165,46 +166,6 @@ impl From<Mods> for NewItem {
   }
 }
 
-// For retrieving from API calls
-#[derive(Deserialize, Debug)]
-pub struct NewItemTz {
-  pub id: Option<i32>,
-  pub start_d: Option<DateTime<Utc>>,
-  pub end_d: Option<DateTime<Utc>>,
-  pub repeats: Option<String>,
-  pub title: String,
-  pub note: Option<String>,
-  pub marked_done: Option<bool>, // I'm not sure if we need this
-  pub deleted: Option<bool>,
-  pub journal: Option<bool>,
-  pub todo: Option<bool>,
-  pub cal: Option<bool>
-}
-
-// I don't understand how this type signature works, it feels like I'm casting the type backwards from the argument? is that allowed? Compiler says it's ok so ¯\_(ツ)_/¯
-// I think this works because DateTime _requires_ a tz, but it doesn't matter what it is, the functions all work agnostic of the tz
-pub fn opt_utc_to_naive<Tz: TimeZone>(dt_tz: Option<DateTime<Tz>>) -> Option<NaiveDateTime> {
-  dt_tz.map(|date| date.naive_utc())
-}
-
-impl From<NewItemTz> for NewItem {
-  fn from(old_item: NewItemTz) -> Self {
-    Self {
-      id: old_item.id,
-      start_d: opt_utc_to_naive(old_item.start_d),
-      end_d: opt_utc_to_naive(old_item.end_d),
-      repeats: old_item.repeats,
-      title: old_item.title,
-      note: old_item.note,
-      marked_done: old_item.marked_done,
-      deleted: old_item.deleted,
-      journal: old_item.journal,
-      todo: old_item.todo,
-      cal: old_item.cal
-    }
-  }
-}
-
 #[derive(Serialize)]
 pub struct ItemResponse {
   pub item_id: i32,
@@ -213,37 +174,22 @@ pub struct ItemResponse {
   pub children: Vec<Item>
 }
 
-// #[derive(Serialize)]
-// pub struct ItemVec {
-//   pub items: Vec<Item>,
-//   pub refs: Vec<crate::models::reference::ItemRef>
-// }
-
-#[derive(Serialize)]
-/**
-  This object is the one that should be returned to the client whenever possible, and also
-  what the client will send to us. The `tags` and `references` fields are separate tables, so we need to
-  separate them before this struct touches the DB.
-
-  I need to codify exactly what this is supposed to do. TaskLike impl is getting too wide to be useful,
-  and I (I suspect) have a bunch of extra implementations here that are never called. This strictly should
-  be used for API -> RefsItem -> Item and Item -> RefsItem -> API things, and nothing more.
-*/
+#[derive(Serialize, Deserialize)]
 pub struct RefsItem {
-  pub id: i32,
-  pub created_at: NaiveDateTime, // This should be a DateTime, we can turn it into UTC when we need to.
-  pub updated_at: NaiveDateTime,
+  pub id: Option<i32>,
+  pub created_at: Option<NaiveDateTime>, // This should be a DateTime, we can turn it into UTC when we need to.
+  pub updated_at: Option<NaiveDateTime>,
   pub start_d: Option<NaiveDateTime>,
   pub end_d: Option<NaiveDateTime>,
-  pub repeats: String,
-  pub title: String,
+  pub repeats: Option<String>,
+  pub title: Option<String>,
   pub note: Option<String>,
-  pub marked_done: bool,
-  pub deleted: bool,
+  pub marked_done: Option<bool>,
+  pub deleted: Option<bool>,
   pub parent_id: Option<i32>,
-  pub journal: bool,
-  pub todo: bool,
-  pub cal: bool,
+  pub journal: Option<bool>,
+  pub todo: Option<bool>,
+  pub cal: Option<bool>,
   pub user_id: Option<i32>,
 
   // these parts make it more complicated. We send/recieve this with the client and must
@@ -252,26 +198,54 @@ pub struct RefsItem {
   pub tags: Vec<crate::models::tags::Tag>
 }
 
+impl std::convert::TryFrom<RefsItem> for NewItem {
+  type Error = TDError;
+  fn try_from(item: RefsItem) -> Result<Self, TDError> {
+    // required fields: title
+    if let Some(title) = item.title {
+      Ok(NewItem {
+        id: item.id,
+        title: title,
+        start_d: item.start_d,
+        end_d: item.end_d,
+        repeats: item.repeats,
+        note: item.note,
+        marked_done: item.marked_done,
+        deleted: item.deleted,
+        // parent_id: item.parent_id,
+        journal: item.journal,
+        todo: item.todo,
+        cal: item.cal,
+        user_id: item.user_id
+      })
+    } else {
+      Err(TDError::ParseError(String::from(
+        "Error constructing NewItem from RefsItem. Missing field: title"
+      )))
+    }
+  }
+}
+
 impl From<Item> for RefsItem {
   fn from(item: Item) -> Self {
     return Self {
-      id: item.id,
-      created_at: item.created_at,
-      updated_at: item.updated_at,
+      id: Some(item.id),
+      created_at: Some(item.created_at),
+      updated_at: Some(item.updated_at),
       start_d: item.start_d,
       end_d: item.end_d,
-      repeats: item.repeats,
-      title: item.title,
+      repeats: Some(item.repeats),
+      title: Some(item.title),
       note: match &item.note {
         Some(s) => Some(String::from(s)),
         _ => None
       },
-      marked_done: item.marked_done,
-      deleted: item.deleted,
+      marked_done: Some(item.marked_done),
+      deleted: Some(item.deleted),
       parent_id: item.parent_id,
-      journal: item.journal,
-      todo: item.todo,
-      cal: item.cal,
+      journal: Some(item.journal),
+      todo: Some(item.todo),
+      cal: Some(item.cal),
       user_id: item.user_id,
 
       references: vec![],
@@ -292,7 +266,10 @@ impl RefsItem {
 // This TaskLike impl is used only for display. Display functions should be moved out into a separate Trait
 impl TaskLike for RefsItem {
   fn get_id(&self) -> i32 {
-    self.id
+    match self.id {
+      Some(i) => i,
+      None => -1
+    }
   }
 
   fn formatted_date(&self) -> String {
@@ -312,11 +289,14 @@ impl TaskLike for RefsItem {
   }
 
   fn get_rep(&self) -> Repetition {
-    Repetition::from_str(&self.repeats.to_string()).unwrap_or_else(|_| Repetition::Never)
+    match &self.repeats {
+      Some(r) => Repetition::from_str(r).unwrap_or_else(|_| Repetition::Never),
+      None => Repetition::Never
+    }
   }
 
   fn is_finished(&self) -> bool {
-    self.marked_done
+    self.marked_done.unwrap_or_else(|| false)
   }
 
   // TODO: This isn't finished yet
@@ -333,15 +313,22 @@ impl TaskLike for RefsItem {
 // I think this isn't used
 impl Display for RefsItem {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    let title = String::from(match &self.title {
+      Some(t) => t,
+      _ => {
+        eprintln!("Called print on a title-less item! How did you get here?");
+        "n/a"
+      }
+    });
     write!(
       f,
       "{id} - {title}\n{range}\n{rep}\nNotes: {note}\nFinished: {finished}",
-      id = self.id,
-      title = self.title,
+      id = self.get_id(),
+      title = title,
       range = self.formatted_date(),
-      rep = self.repeats,
+      rep = self.get_rep(),
       note = self.note_or_empty(),
-      finished = self.marked_done
+      finished = self.marked_done.unwrap_or_else(|| false)
     )
   }
 }

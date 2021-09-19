@@ -20,8 +20,7 @@ pub enum Repetition {
   Daily,
   Weekly,
   Monthly,
-  Yearly
-  // Custom(MultiDays)
+  Yearly // Custom(MultiDays)
 }
 
 impl FromStr for Repetition {
@@ -33,8 +32,7 @@ impl FromStr for Repetition {
       "y" | "yearly" => Repetition::Yearly,
       "w" | "weekly" => Repetition::Weekly,
       "m" | "monthly" => Repetition::Monthly,
-      "d" | "daily" | &_ => Repetition::Daily
-      // "_" => Err(TDError::ParseError("An error for testing".to_string()))?
+      "d" | "daily" | &_ => Repetition::Daily // "_" => Err(TDError::ParseError("An error for testing".to_string()))?
     })
   }
 }
@@ -65,8 +63,7 @@ impl fmt::Display for Repetition {
       Repetition::Daily => "Daily",
       Repetition::Weekly => "Weekly",
       Repetition::Monthly => "Monthly",
-      Repetition::Yearly => "Yearly"
-      // Repetition::Custom(_custom) => "Custom"
+      Repetition::Yearly => "Yearly" // Repetition::Custom(_custom) => "Custom"
     };
     write!(f, "{}", printable)
   }
@@ -130,6 +127,7 @@ pub fn task_on_day(task: &impl TaskLike, check: NaiveDate) -> bool {
 }
 
 pub fn show_type(kind: Repetition, start: NaiveDate, tasks: Vec<impl TaskLike>) {
+  // make this so it only filters + returns the filtered list?
   match kind {
     Repetition::Never => (),
     Repetition::Daily => (),
@@ -171,6 +169,10 @@ pub fn occurs_between(mut items: Vec<Item>, start: DateTime<Utc>, end: DateTime<
 
   items
 }
+
+// *-------------------------------------
+// Printing functions
+// *-------------------------------------
 
 pub fn print_month(date: NaiveDate, tasks: Vec<impl TaskLike>) {
   let year = date.year();

@@ -12,59 +12,16 @@ use dotenv::dotenv;
 #[macro_use]
 extern crate diesel_migrations;
 use diesel::PgConnection;
-// use item::NewItem;
-use reference::NewItemRef;
-// type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
-use to_do::{DbPool, get_pool_connection};
+use to_do::{DbPool, get_pool_connection, parse_json};
 
 use to_do::actions;
-use to_do::models::{item, reference, user, responses};
+use to_do::models::{reference, responses, user};
+use reference::NewItemRef;
 
 embed_migrations!();
 
-/**
- * returns an object with two fields: `items`: Vec<Item>, and `references`: Vec<ItemRef>
- */
-#[get("/items/get")] // this needs some better controls on it. Pagination? Time segments?
-async fn get_items(
-  filters: web::Query<item::ItemFilter>,
-  pool: web::Data<DbPool>
-) -> Result<HttpResponse, Error> {
-  let filters = filters.into_inner();
-  let conn = get_pool_connection(pool);
-  let items = web::block(move || actions::item::get_items(&conn, filters))
-    .await
-    .map_err(|e| {
-      eprintln!("{}", e);
-      HttpResponse::InternalServerError().finish()
-    })?;
-  Ok(HttpResponse::Ok().json(items))
-}
-
 // break these out into modules (by path, maybe?)
-#[get("/item/{item_id}")]
-async fn get_item_by_id(
-  pool: web::Data<DbPool>,
-  path_id: web::Path<i32>
-) -> Result<HttpResponse, Error> {
-  let conn = get_pool_connection(pool);
-  let item_id = path_id.into_inner(); // https://chrismcg.com/2019/04/30/deserializing-optional-datetimes-with-serde/ this link seems outdated, works ok without custom parse
-  println!("get item by id {}", item_id);
-
-  let item = web::block(move || actions::item::get_item_by_id(item_id, &conn))
-    .await
-    .map_err(|e| {
-      // does this error pattern do what I hope it does?
-      eprintln!("{}", e);
-      HttpResponse::InternalServerError().finish()
-    })?;
-  if let Some(item) = item {
-    Ok(HttpResponse::Ok().json(item))
-  } else {
-    let res = HttpResponse::NotFound().body(format!("No item found with ID {}", item_id));
-    Ok(res)
-  }
-}
+// ^ ongoing effort into the /routes folder
 
 #[get("/item/related/{item_id}")] // This is doing what the get item by id should be doing.
 async fn get_related_by_id(
@@ -94,11 +51,11 @@ async fn get_related_by_id(
 #[post("/references/")]
 async fn post_references(
   pool: web::Data<DbPool>,
-  form: web::Json<Vec<NewItemRef>>
+  payload: web::Payload
 ) -> Result<HttpResponse, Error> {
   let conn = get_pool_connection(pool);
 
-  let refs = form.into_inner();
+  let refs = parse_json::<Vec<NewItemRef>>(payload).await?;
 
   let refs = web::block(move || actions::item::insert_references(refs, &conn))
     .await
@@ -113,11 +70,11 @@ async fn post_references(
 #[delete("/references")]
 async fn delete_references(
   pool: web::Data<DbPool>,
-  form: web::Json<Vec<NewItemRef>>
+  payload: web::Payload
 ) -> Result<HttpResponse, Error> {
   let conn = get_pool_connection(pool);
 
-  let refs = form.into_inner();
+  let refs = parse_json::<Vec<NewItemRef>>(payload).await?;
 
   let refs = web::block(move || actions::item::delete_references(refs, &conn))
     .await
@@ -128,66 +85,13 @@ async fn delete_references(
   Ok(HttpResponse::Ok().json(refs))
 }
 
-#[derive(serde::Deserialize)]
-pub struct AddItem {
-  item: item::NewItemTz,
-  refs: Vec<reference::NewItemRef>,
-  tags: Vec<String>
-}
-
-#[post("/item")]
-async fn add_item(
-  pool: web::Data<DbPool>,
-  form: web::Json<AddItem>
-) -> Result<HttpResponse, Error> {
-  let conn = get_pool_connection(pool);
-
-  let request_body = form.into_inner();
-  let new_refs = request_body.refs;
-  let tags = request_body.tags;
-
-  let item = item::NewItem::from(request_body.item);
-
-  // use web::block to offload blocking Diesel code without blocking server thread
-  let new_item = web::block(move || actions::item::upsert_item(item, new_refs, tags, &conn))
-    .await
-    .map_err(|e| {
-      eprintln!("{}", e);
-      HttpResponse::InternalServerError().finish()
-    })?;
-
-  Ok(HttpResponse::Ok().json(new_item))
-}
-
-#[delete("/item/{item_id}")]
-async fn delete_item(
-  pool: web::Data<DbPool>,
-  path_id: web::Path<i32>
-) -> Result<HttpResponse, Error> {
-  let conn = get_pool_connection(pool);
-  let item_id = path_id.into_inner();
-
-  let _item = web::block(move || actions::item::delete_item_by_id(item_id, &conn))
-    .await
-    .map_err(|e| {
-      eprintln!("{}", e);
-      HttpResponse::InternalServerError().finish()
-    })?;
-  let res = responses::Response {
-    id: None,
-    message: format!("Successfully deleted item #{}", item_id),
-    value: Some(item_id)
-  };
-  Ok(HttpResponse::Ok().json(res))
-}
-
 #[post("/user/new")]
 async fn create_user(
   pool: web::Data<DbPool>,
-  form: web::Json<user::NewUserRequest>
+  payload: web::Payload
 ) -> Result<HttpResponse, Error> {
   let conn = get_pool_connection(pool);
-  let mut request_body = form.into_inner();
+  let mut request_body = parse_json::<user::NewUserRequest>(payload).await?;
 
   request_body.user.pwd_hash = None;
   request_body.user.pwd_salt = None;
@@ -251,7 +155,6 @@ async fn main() -> Result<(), std::io::Error> {
   //     None => ()
   // }
 
-  // let addr = "0.0.0.0:8080"; // TODO: pull this from env
   let addr = "localhost:8080"; // TODO: pull this from env
   println!("Listening on http://{}", addr);
 
@@ -270,14 +173,12 @@ async fn main() -> Result<(), std::io::Error> {
       // set up DB pool to be used with web::Data<Pool> extractor
       .data(pool.clone())
       .wrap(middleware::Logger::default())
-      .service(get_items)
-      .service(add_item)
-      .service(get_item_by_id)
+      .configure(to_do::routes::config)
       .service(get_related_by_id)
       .service(post_references)
       .service(create_user)
       .service(login_user)
-      .service(delete_item)
+    // .service(delete_item)
   })
   .bind(&addr)?
   .run()

@@ -5,6 +5,7 @@ use crate::models::item::{NewItem, Item, ItemResponse, ItemFilter, RefsItem};
 use crate::models::reference::{NewItemRef, ItemRef};
 use crate::models::tags::{Tag, NewItemTag};
 use crate::cal::occurs_between;
+use crate::TaskLike;
 
 // this is a big function. How can I break it up into something smaller?
 pub fn get_items(
@@ -21,7 +22,7 @@ pub fn get_items(
   };
 
   // Start building the DB query
-  let mut query = items.limit(item_limit).into_boxed(); // .into_boxed() is required to add constraints to the query and make it dynamic
+  let mut query = items.order(id.asc()).limit(item_limit).into_boxed(); // .into_boxed() is required to add constraints to the query and make it dynamic
 
   match filters.deleted {
     Some(value) => query = query.filter(deleted.eq(value)),
@@ -150,7 +151,7 @@ pub fn get_items(
 
   for i in tags_vec {
     let mut index = 0;
-    while index < response.len() && response[index].id != i.item_id {
+    while index < response.len() && response[index].get_id() != i.item_id {
       index += 1;
     }
     response[index].tags.push(i);
@@ -167,10 +168,23 @@ pub fn get_items(
 
       for i in refs {
         let mut index = 0;
-        while index < response.len() && response[index].id != i.origin_id {
+        while index < response.len() && response[index].get_id() != i.origin_id {
           index += 1;
         }
         if index < response.len() {
+          let origin_id = i.origin_id;
+
+          // update parent_id on the child
+          // find child
+          match response
+            .iter_mut()
+            .find(|child| child.get_id() == i.child_id)
+          {
+            Some(item) => {
+              item.parent_id = Some(origin_id);
+            }
+            None => {}
+          }
           response[index].references.push(i);
         } else {
           println!(
@@ -224,19 +238,26 @@ pub fn upsert_item(
         NewItemRef {
           origin_id: None,
           child_id: Some(_)
-        } => references[i].origin_id = Some(inserted_item.id),
+        } => references[i].origin_id = Some(inserted_item.get_id()),
         NewItemRef {
           origin_id: Some(_),
           child_id: None
-        } => references[i].child_id = Some(inserted_item.id),
+        } => references[i].child_id = Some(inserted_item.get_id()),
         _ => ()
       }
     }
-    insert_references(references, conn)?;
+    match insert_references(references, conn) {
+      Ok(refs) => {
+        inserted_item.references = refs;
+      }
+      Err(e) => {
+        eprintln!("an error occurred! {}", e)
+      }
+    }
   }
 
   if tags.len() > 0 {
-    inserted_item.tags = insert_tags(tags, inserted_item.id, conn)?;
+    inserted_item.tags = insert_tags(tags, inserted_item.get_id(), conn)?;
   }
 
   Ok(inserted_item)
@@ -255,7 +276,7 @@ pub fn insert_tags(
     .into_iter()
     .map(|t| NewItemTag {
       tag: t,
-      item_id: parent_id
+      item_id: Some(parent_id)
     })
     .collect();
 
@@ -264,17 +285,49 @@ pub fn insert_tags(
     .get_results::<Tag>(conn)
 }
 
+// maybe better as (parent: i32, references: array<i32>)
+// when will I want to shotgun a bunch of unrelated references in? probably never.
 pub fn insert_references(
   // new_id: i32,
   references: Vec<NewItemRef>,
   conn: &PgConnection
-) -> Result<(), diesel::result::Error> {
+) -> Result<Vec<ItemRef>, diesel::result::Error> {
   use crate::schema::item_references::dsl::*;
 
-  let _q = diesel::insert_into(item_references)
-    .values(references)
-    .execute(conn)?;
-  Ok(())
+  let result = conn.transaction::<_, diesel::result::Error, _>(|| {
+    let need_updates = references.iter();
+
+    let mut updated: usize = 0;
+    // update children[].parent_id
+    for reference in need_updates {
+      use crate::schema::items::dsl::*;
+      let child_id_to_set = reference.child_id.unwrap();
+      let origin_id_to_set = reference.origin_id.unwrap();
+      let _q = diesel::update(items.filter(id.eq(child_id_to_set)))
+        .set(parent_id.eq(origin_id_to_set))
+        .execute(conn);
+      if let Ok(count) = _q {
+        updated += count;
+      }
+    }
+    let updated_ids: Vec<i32> = references
+      .iter()
+      .map(|reference| reference.origin_id.unwrap())
+      .collect();
+
+    let _q = diesel::insert_into(item_references)
+      .values(references)
+      .execute(conn)?;
+
+    let updated_references = item_references
+      .filter(origin_id.eq_any(updated_ids))
+      .get_results::<ItemRef>(conn);
+
+    println!("inserted references, updated {} children", updated);
+    Ok(updated_references)
+  })?;
+
+  result
 }
 
 pub fn delete_references(

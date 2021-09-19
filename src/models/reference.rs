@@ -8,17 +8,17 @@ use crate::schema::item_references;
   origin is the parent, upstream, comes first in the mental model/map
   When creating references, however, they are usually backwards, going from the child to the parent
 */
-#[derive(Queryable, Serialize, Debug)]
+#[derive(Queryable, Serialize, Deserialize, Debug, Clone)]
 pub struct ItemRef {
-    pub id: i32,
-    pub created_at: NaiveDateTime,
-    pub origin_id: i32,
-    pub child_id: i32,
+  pub id: i32,
+  pub created_at: NaiveDateTime,
+  pub origin_id: i32,
+  pub child_id: i32
 }
 
-#[derive(Insertable, Deserialize, Debug, AsChangeset)]
+#[derive(Insertable, Deserialize, Debug, AsChangeset, Clone)]
 #[table_name = "item_references"]
 pub struct NewItemRef {
-    pub origin_id: Option<i32>,
-    pub child_id: Option<i32>,
+  pub origin_id: Option<i32>,
+  pub child_id: Option<i32>
 }

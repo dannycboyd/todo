@@ -27,6 +27,7 @@ extern crate dotenv;
 pub mod schema;
 pub mod models;
 pub mod actions; // actix-web action functions
+pub mod routes;
 
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DbConn = PooledConnection<ConnectionManager<PgConnection>>;
@@ -34,6 +35,8 @@ pub fn get_pool_connection(pool: web::Data<DbPool>) -> DbConn {
   pool.get().expect("Couldn't get connection from pool!")
 }
 #[derive(Debug)]
+
+// * REDO ERRORS AS SEPARATE STRUCTS WITH A SINGLE APPERROR TYPE -> TodoError trait in util/errors.rs
 pub enum TDError {
   IOError(String),
   ParseError(String),
@@ -66,6 +69,22 @@ impl std::fmt::Display for TDError {
       Self::Quit => "Quit Action"
     };
     write!(f, "{}", value)
+  }
+}
+
+use actix_web::{dev::HttpResponseBuilder, error, http::header, http::StatusCode, HttpResponse};
+impl error::ResponseError for TDError {
+  fn error_response(&self) -> HttpResponse {
+    println!("This is an error! {}", *self);
+    HttpResponseBuilder::new(self.status_code())
+      .set_header(header::CONTENT_TYPE, "text/html; charset=utf-8")
+      .body(self.to_string())
+  }
+
+  fn status_code(&self) -> StatusCode {
+    match self {
+      _ => StatusCode::BAD_REQUEST
+    }
   }
 }
 
@@ -151,4 +170,44 @@ pub trait TaskLike {
   fn is_finished(&self) -> bool;
   fn get_last_completed(&self) -> Option<&NaiveDate>;
   fn to_string(&self) -> String;
+}
+
+pub trait ItemTrait1 {
+  fn get_id(&self) -> i32;
+  fn get_start(&self) -> Option<NaiveDate>;
+  fn get_rep(&self) -> Repetition;
+  fn is_finished(&self) -> bool;
+  fn get_last_completed(&self) -> Option<&NaiveDate>;
+}
+
+pub trait ItemTrait2 {
+  fn formatted_date(&self) -> String;
+  fn to_string(&self) -> String;
+}
+
+// put this in a real util file
+type TodoResult<T> = Result<T, actix_web::error::Error>;
+const MAX_SIZE: usize = 262_144; // get this from env somehow?
+use serde::de::DeserializeOwned;
+// from https://github.com/actix/examples/blob/master/json/json/src/main.rs
+// takes a bytestream Payload and a type that implements Deserialize and returns a result of that type.
+pub async fn parse_json<T: DeserializeOwned>(mut payload: web::Payload) -> TodoResult<T> {
+  use futures::StreamExt;
+  let mut body = web::BytesMut::new();
+
+  while let Some(chunk) = payload.next().await {
+    let chunk = chunk?;
+    // limit max size of in-memory payload
+    if (body.len() + chunk.len()) > MAX_SIZE {
+      return Err(actix_web::error::ErrorBadRequest("overflow")); // tweak this?
+    }
+    body.extend_from_slice(&chunk);
+  }
+
+  serde_json::from_slice::<T>(&body).map_err(|e| {
+    // do some wacky stuff here
+    eprintln!("An error occurred in todo_service::parse_json:\n{}", e);
+    let res = format!("Invalid upload request: {}", e);
+    actix_web::error::ErrorBadRequest(res)
+  })
 }
