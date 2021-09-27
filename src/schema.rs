@@ -1,9 +1,9 @@
 table! {
-    item_references (id) {
-        id -> Int4,
+    item_references (child_id) {
         created_at -> Timestamp,
         origin_id -> Int4,
         child_id -> Int4,
+        updated_at -> Timestamp,
     }
 }
 

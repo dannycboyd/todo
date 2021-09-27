@@ -21,7 +21,10 @@ pub async fn get_items_handler(
 }
 
 // #[post("/item")]
-pub async fn add_item(pool: web::Data<DbPool>, body: web::Payload) -> Result<HttpResponse, Error> {
+pub async fn upsert_item_handler(
+  pool: web::Data<DbPool>,
+  body: web::Payload
+) -> Result<HttpResponse, Error> {
   let conn = get_pool_connection(pool);
 
   let request_body = crate::parse_json::<NewItemTz>(body).await?;

@@ -13,7 +13,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
           .service(
             web::resource("")
               .route(web::get().to(get_items_handler))
-              .route(web::post().to(add_item))
+              .route(web::post().to(upsert_item_handler))
           )
           .service(
             // /items/{item_id}

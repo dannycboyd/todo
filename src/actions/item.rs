@@ -215,7 +215,7 @@ pub fn get_item_by_id(
 
 pub fn upsert_item(
   new_item: NewItem,
-  mut references: Vec<NewItemRef>,
+  references: Vec<i32>,
   tags: Vec<String>, // I guess for now we delete + reinsert
   conn: &PgConnection
 ) -> Result<RefsItem, diesel::result::Error> {
@@ -233,31 +233,17 @@ pub fn upsert_item(
 
   println!("{:?}", references);
   if references.len() > 0 {
-    for i in 0..references.len() {
-      match references[i] {
-        NewItemRef {
-          origin_id: None,
-          child_id: Some(_)
-        } => references[i].origin_id = Some(inserted_item.get_id()),
-        NewItemRef {
-          origin_id: Some(_),
-          child_id: None
-        } => references[i].child_id = Some(inserted_item.get_id()),
-        _ => ()
-      }
-    }
-    match insert_references(references, conn) {
-      Ok(refs) => {
-        inserted_item.references = refs;
-      }
-      Err(e) => {
-        eprintln!("an error occurred! {}", e)
-      }
+    match set_references_for_parent(references, inserted_item.id.unwrap(), conn) {
+      Ok(refs) => inserted_item.references = refs,
+      Err(e) => eprintln!("an error occurred! {}", e)
     }
   }
 
   if tags.len() > 0 {
-    inserted_item.tags = insert_tags(tags, inserted_item.get_id(), conn)?;
+    match insert_tags(tags, inserted_item.get_id(), conn) {
+      Ok(inserted) => inserted_item.tags = inserted,
+      Err(e) => eprintln!("an error occurred! {}", e)
+    }
   }
 
   Ok(inserted_item)
@@ -283,6 +269,49 @@ pub fn insert_tags(
   diesel::insert_into(tags)
     .values(tags_values)
     .get_results::<Tag>(conn)
+}
+
+pub fn set_references_for_parent(
+  children: Vec<i32>,
+  parent: i32,
+  conn: &PgConnection
+) -> Result<Vec<ItemRef>, diesel::result::Error> {
+  let result = conn.transaction::<_, diesel::result::Error, _>(|| {
+    let child_ids = children.iter();
+    let mut updated_rows: usize = 0;
+
+    let refs = child_ids.map(|child| {
+      let new_item = NewItemRef {
+        origin_id: Some(parent),
+        child_id: Some(*child)
+      };
+
+      {
+        // update parent_id on child items
+        use crate::schema::items::dsl::*;
+        let _q = diesel::update(items.filter(id.eq(child)))
+          .set(parent_id.eq(parent))
+          .execute(conn);
+        if let Ok(count) = _q {
+          updated_rows += count;
+        }
+      };
+      let result = {
+        // insert or update refs
+        use crate::schema::item_references::dsl::*;
+        diesel::insert_into(item_references)
+          .values(&new_item)
+          .on_conflict(child_id)
+          .do_update()
+          .set(origin_id.eq(parent))
+          .get_result::<ItemRef>(conn)
+      };
+      result
+    });
+    let foo: Result<Vec<ItemRef>, diesel::result::Error> = refs.collect();
+    foo
+  });
+  result
 }
 
 // maybe better as (parent: i32, references: array<i32>)

@@ -20,7 +20,7 @@ pub struct NewItemTz {
   pub user_id: Option<i32>,
 
   pub tags: Vec<String>,
-  pub refs: Vec<super::reference::NewItemRef>
+  pub refs: Vec<i32>
 }
 
 // I don't understand how this type signature works, it feels like I'm casting the type backwards from the argument? is that allowed? Compiler says it's ok so ¯\_(ツ)_/¯
