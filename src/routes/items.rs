@@ -1,6 +1,8 @@
 use actix_web::{HttpResponse, web, Error};
 use crate::{DbPool, get_pool_connection};
-use crate::actions::item::{delete_item_by_id, get_item_by_id, get_items, upsert_item};
+use crate::actions::item::{
+  delete_item_by_id, get_item_by_id, get_items, upsert_item, get_references_by_id
+};
 use crate::models::item::{ItemFilter, NewItem};
 use crate::models::incoming_item::NewItemTz;
 use crate::models::responses::{Response};
@@ -86,6 +88,31 @@ pub async fn get_item_by_id_handler(
     Ok(HttpResponse::Ok().json(item))
   } else {
     let res = HttpResponse::NotFound().body(format!("No item found with ID {}", item_id));
+    Ok(res)
+  }
+}
+
+// #[get("/item/related/{item_id}")] // This is doing what the get item by id should be doing.
+pub async fn get_related_by_id(
+  pool: web::Data<DbPool>,
+  path_id: web::Path<i32>
+) -> Result<HttpResponse, Error> {
+  let conn = get_pool_connection(pool);
+  let item_id = path_id.into_inner();
+
+  let item = web::block(move || get_references_by_id(item_id, &conn))
+    .await
+    .map_err(|e| {
+      eprintln!("{}", e);
+      HttpResponse::InternalServerError().finish()
+    })
+    .unwrap();
+
+  if let Some(items) = item {
+    Ok(HttpResponse::Ok().json(items))
+  } else {
+    let res =
+      HttpResponse::NotFound().body(format!("No related items were found for ID {}", item_id));
     Ok(res)
   }
 }
