@@ -1,4 +1,0 @@
-#!/bin/bash
-bin=$1
-echo building and running ${bin}
-cargo run --bin todo_${bin}
