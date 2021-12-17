@@ -28,6 +28,7 @@ pub mod schema;
 pub mod models;
 pub mod actions; // actix-web action functions
 pub mod routes;
+pub mod util;
 
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DbConn = PooledConnection<ConnectionManager<PgConnection>>;
@@ -185,7 +186,7 @@ pub trait ItemTrait2 {
   fn to_string(&self) -> String;
 }
 
-// put this in a real util file
+// TESTING_TODO: this should get a test
 type TodoResult<T> = Result<T, actix_web::error::Error>;
 const MAX_SIZE: usize = 262_144; // get this from env somehow?
 use serde::de::DeserializeOwned;

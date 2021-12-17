@@ -48,10 +48,12 @@ pub fn config(cfg: &mut web::ServiceConfig) {
       .service(web::resource("login").route(web::get().to(login_user_handler)))
   );
   cfg.service(
-    web::scope("/references").service(
-      web::resource("")
-        .route(web::post().to(post_references))
-        .route(web::delete().to(delete_references_handler))
-    )
+    web::scope("/references")
+      .service(
+        web::resource("").route(web::post().to(post_references)) // .route(web::delete().to(delete_references_handler))
+      )
+      .service(
+        web::resource("child_id/{child_id}").route(web::delete().to(delete_child_refs_handler))
+      )
   );
 }

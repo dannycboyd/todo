@@ -7,6 +7,8 @@ use crate::models::item::{ItemFilter, NewItem};
 use crate::models::incoming_item::NewItemTz;
 use crate::models::responses::{Response};
 
+use log::{error};
+
 pub async fn get_items_handler(
   pool: web::Data<DbPool>,
   filters: web::Query<ItemFilter>
@@ -16,7 +18,7 @@ pub async fn get_items_handler(
   let items = web::block(move || get_items(&conn, filters))
     .await
     .map_err(|e| {
-      eprintln!("{}", e);
+      error!("{}", e);
       HttpResponse::InternalServerError().finish()
     })?;
   Ok(HttpResponse::Ok().json(items))
@@ -42,7 +44,7 @@ pub async fn upsert_item_handler(
   match result {
     Ok(item) => Ok(HttpResponse::Ok().json(item)),
     Err(e) => {
-      println!("An error occurred: {}", e);
+      error!("An error occurred: {}", e);
       Ok(HttpResponse::InternalServerError().finish())
     }
   }
@@ -58,7 +60,7 @@ pub async fn delete_item(
   let _item = web::block(move || delete_item_by_id(item_id, &conn))
     .await
     .map_err(|e| {
-      eprintln!("{}", e);
+      error!("{}", e);
       HttpResponse::InternalServerError().finish()
     })?;
   let res = Response {
@@ -81,7 +83,7 @@ pub async fn get_item_by_id_handler(
     .await
     .map_err(|e| {
       // does this error pattern do what I hope it does?
-      eprintln!("{}", e);
+      error!("{}", e);
       HttpResponse::InternalServerError().finish()
     })?;
   if let Some(item) = item {
@@ -103,7 +105,7 @@ pub async fn get_related_by_id(
   let item = web::block(move || get_references_by_id(item_id, &conn))
     .await
     .map_err(|e| {
-      eprintln!("{}", e);
+      error!("{}", e);
       HttpResponse::InternalServerError().finish()
     })
     .unwrap();
@@ -119,13 +121,16 @@ pub async fn get_related_by_id(
 
 #[derive(serde::Serialize)]
 struct JsonResponse {
+  code: i32,
   err: Option<String>,
   msg: Option<String>
 }
 
 pub async fn test_error(_pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+  error!("error endpoint called!");
   Ok(HttpResponse::BadRequest().json(JsonResponse {
     err: Some(String::from("An error occurred")),
+    code: 500,
     msg: None
   }))
 }

@@ -51,7 +51,7 @@ pub fn get_items(
 
   match filters.item_id {
     Some(search_id) => query = query.filter(id.eq(search_id)),
-    None => println!("no id")
+    None => ()
   };
 
   match filters.parent_id {
@@ -200,6 +200,21 @@ pub fn get_items(
   Ok(response)
 }
 
+/*
+ * test for ^
+ * init db if necessary
+ * create connection
+ *
+ * seed an item (hold the id)
+ * request the item by id
+ * verify it's the same item
+ *
+ * request an item we know doesn't exist (id 9999999999)
+ * verify no result
+ *
+ * request an item with a negative id (-1)
+ * verify no result
+ */
 pub fn get_item_by_id(
   item_id: i32,
   conn: &PgConnection
@@ -213,6 +228,22 @@ pub fn get_item_by_id(
   Ok(item)
 }
 
+/*
+ * test for upsert_item
+ *
+ * init test db if needed
+ * get connection
+ *
+ * make item { title: "upsert_test_{$testID}" }, save id
+ * verify insert
+ * run function again with an upsert { id: inserted_id, title: "upsert_test_{$testID} (UPDATED)"}
+ * verify update, same ID
+ *
+ * negative cases:
+ *  * missing field
+ *  * bad dates
+ *  * bad parent_id
+*/
 pub fn upsert_item(
   new_item: NewItem,
   references: Vec<i32>,
@@ -249,6 +280,21 @@ pub fn upsert_item(
   Ok(inserted_item)
 }
 
+/*
+ * test for insert_tags
+ * (regular setup. ifn db init testdb, get connection)
+ *
+ * make item { title: "insert_tags_{$testID}", tags: ["bad"] }, save the id.
+ * insert_tags(saved_id, ["static_tag", "${testID}"])
+ * verify that "bad" is no longer present
+ * verify that the static tag and testid tag are present
+ *
+ * insert_tags(bad_id, ["junk_tag"])
+ * verify that insert_tags catches, wraps, and throws an error for bad id
+ * verify that "junk_tag" isn't saved to DB.
+ *
+ * are there unallowed tags? What other limits does this function have?
+ */
 pub fn insert_tags(
   tags_values: Vec<String>,
   parent_id: i32,
@@ -271,6 +317,21 @@ pub fn insert_tags(
     .get_results::<Tag>(conn)
 }
 
+/*
+ * test for set_references_for_parent
+ *
+ * expected behavior:
+ *  passed parent, list of child ids.
+ *  insert [ { parent_id: $id, child_id: $child }... ]
+ *  children items get parent_id set in Items table.
+ *  old references (child_id is unique) get modified with new parent id.
+ *  new references get added
+ *
+ * failure points:
+ *  bad ids
+ *  ids not updating
+ *  duplicate refs with [parent: x, child, a], [parent: y, child: a]
+ */
 pub fn set_references_for_parent(
   children: Vec<i32>,
   parent: i32,
@@ -314,51 +375,43 @@ pub fn set_references_for_parent(
   result
 }
 
-// maybe better as (parent: i32, references: array<i32>)
-// when will I want to shotgun a bunch of unrelated references in? probably never.
-pub fn insert_references(
-  // new_id: i32,
-  references: Vec<NewItemRef>,
+/*
+ * given a reference `NewItemRef`, validates that it contains both parts before inserting it, and updating the appropriate child item
+ * Returns Result<Item, diesel::result::Error> containing either the updated child item
+ * Returns Err(NotFound) if either part is missing
+*/
+pub fn insert_reference(
+  reference: NewItemRef,
   conn: &PgConnection
-) -> Result<Vec<ItemRef>, diesel::result::Error> {
-  use crate::schema::item_references::dsl::*;
+) -> Result<Item, diesel::result::Error> {
+  match (reference.origin_id, reference.child_id) {
+    (Some(origin_value), Some(child_value)) => {
+      {
+        use crate::schema::item_references::dsl::*;
 
-  let result = conn.transaction::<_, diesel::result::Error, _>(|| {
-    let need_updates = references.iter();
-
-    let mut updated: usize = 0;
-    // update children[].parent_id
-    for reference in need_updates {
-      use crate::schema::items::dsl::*;
-      let child_id_to_set = reference.child_id.unwrap();
-      let origin_id_to_set = reference.origin_id.unwrap();
-      let _q = diesel::update(items.filter(id.eq(child_id_to_set)))
-        .set(parent_id.eq(origin_id_to_set))
-        .execute(conn);
-      if let Ok(count) = _q {
-        updated += count;
+        let _query = diesel::insert_into(item_references)
+          .values(reference)
+          .on_conflict(child_id)
+          .do_update()
+          .set(origin_id.eq(origin_value))
+          .execute(conn)?;
+      }
+      {
+        use crate::schema::items::dsl::*;
+        let updated_child = diesel::update(items.filter(id.eq(child_value)))
+          .set(parent_id.eq(origin_value))
+          .get_result::<Item>(conn)?;
+        Ok(updated_child)
       }
     }
-    let updated_ids: Vec<i32> = references
-      .iter()
-      .map(|reference| reference.origin_id.unwrap())
-      .collect();
-
-    let _q = diesel::insert_into(item_references)
-      .values(references)
-      .execute(conn)?;
-
-    let updated_references = item_references
-      .filter(origin_id.eq_any(updated_ids))
-      .get_results::<ItemRef>(conn);
-
-    println!("inserted references, updated {} children", updated);
-    Ok(updated_references)
-  })?;
-
-  result
+    _ => Err(diesel::result::Error::NotFound)
+  }
 }
 
+/*
+ * given a parent_id, references should get deleted
+ * children in the deleted references should get their parent_id cleared.
+*/
 pub fn delete_references(
   _references: Vec<NewItemRef>,
   _conn: &PgConnection
@@ -371,6 +424,30 @@ pub fn delete_references(
   Ok(())
 }
 
+pub fn delete_child_ref(
+  target_id: i32,
+  conn: &PgConnection
+) -> Result<Item, diesel::result::Error> {
+  {
+    use crate::schema::item_references::dsl::*;
+    let _del_query =
+      diesel::delete(item_references.filter(child_id.eq(target_id))).execute(conn)?;
+  }
+  {
+    use crate::schema::items::dsl::*;
+    let item = diesel::update(items.filter(id.eq(target_id)))
+      .set(parent_id.eq(None::<i32>))
+      .get_result::<Item>(conn)?;
+    Ok(item)
+  }
+}
+
+/*
+ * item should get deleted
+ * failure cases:
+ *  wrong id
+ *  references existing in other tables
+ */
 pub fn delete_item_by_id(item_id: i32, conn: &PgConnection) -> Result<(), diesel::result::Error> {
   use crate::schema::items::dsl::*;
 
@@ -409,6 +486,7 @@ pub fn get_children_by_parent_id(
   Ok(data)
 }
 
+// do I have a use case for this?
 pub fn get_references_by_id(
   item_id: i32,
   conn: &PgConnection
