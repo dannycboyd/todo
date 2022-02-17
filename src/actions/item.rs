@@ -380,8 +380,10 @@ pub fn set_references_for_parent(
  * Returns Result<Item, diesel::result::Error> containing either the updated child item
  * Returns Err(NotFound) if either part is missing
 */
+// this needs to deal with `child_order` in some way, either by taking option<i32> or w/e
 pub fn insert_reference(
   reference: NewItemRef,
+  new_order: i32,
   conn: &PgConnection
 ) -> Result<Item, diesel::result::Error> {
   match (reference.origin_id, reference.child_id) {
@@ -398,8 +400,22 @@ pub fn insert_reference(
       }
       {
         use crate::schema::items::dsl::*;
+        use diesel::expression::count::count;
+        let count: i64 = items.select(count(id)).filter(parent_id.eq(origin_value)).first(conn)?;
+        let count = count as i32;
+        // if new_order < 0, set to 0
+        // if new_order > count, set to count
+        let new_order = match new_order {
+          o if o < 0 => 0,
+          o if o > count => count,
+          _ => new_order
+        };
+
         let updated_child = diesel::update(items.filter(id.eq(child_value)))
-          .set(parent_id.eq(origin_value))
+          .set((
+            parent_id.eq(origin_value),
+            child_order.eq(new_order)
+          ))
           .get_result::<Item>(conn)?;
         Ok(updated_child)
       }
@@ -428,13 +444,21 @@ pub fn delete_child_ref(
   target_id: i32,
   conn: &PgConnection
 ) -> Result<Item, diesel::result::Error> {
+  let mut old_parent_id: i32 = 0;
   {
     use crate::schema::item_references::dsl::*;
+    old_parent_id = item_references.select(origin_id).filter(child_id.eq(target_id)).first(conn)?;
     let _del_query =
       diesel::delete(item_references.filter(child_id.eq(target_id))).execute(conn)?;
   }
   {
     use crate::schema::items::dsl::*;
+    // get the old child_order location
+    let order_number: i32 = items.select(child_order).filter(id.eq(old_parent_id)).first(conn)?;
+    // using the child_order, increment every sibling below the current
+    diesel::update(items.filter(parent_id.is_null()).filter(child_order.ge(order_number))) // since we're deleting the reference (parent_id -> no parent id) filter using is_null
+    .set(child_order.eq(child_order + 1)).execute(conn)?;
+    // now update the child_id on the item in question
     let item = diesel::update(items.filter(id.eq(target_id)))
       .set(parent_id.eq(None::<i32>))
       .get_result::<Item>(conn)?;

@@ -24,6 +24,7 @@ table! {
         todo -> Bool,
         cal -> Bool,
         user_id -> Nullable<Int4>,
+        child_order -> Int4,
     }
 }
 

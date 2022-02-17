@@ -42,7 +42,8 @@ pub struct Item {
   pub journal: bool,
   pub todo: bool,
   pub cal: bool,
-  pub user_id: Option<i32>
+  pub user_id: Option<i32>,
+  pub child_order: i32,
 }
 
 impl Item {
@@ -123,7 +124,8 @@ pub struct NewItem {
   pub journal: Option<bool>,
   pub todo: Option<bool>,
   pub cal: Option<bool>,
-  pub user_id: Option<i32>
+  pub user_id: Option<i32>,
+  pub child_order: Option<i32>
 }
 
 impl NewItem {
@@ -140,7 +142,8 @@ impl NewItem {
       journal: None,
       todo: None,
       cal: None,
-      user_id: None
+      user_id: None,
+      child_order: None,
     }
   }
 }
@@ -195,7 +198,9 @@ pub struct RefsItem {
   // these parts make it more complicated. We send/recieve this with the client and must
   // translate to Item before talking to the DB
   pub references: Vec<crate::models::reference::ItemRef>,
-  pub tags: Vec<crate::models::tags::Tag>
+  pub tags: Vec<crate::models::tags::Tag>,
+
+  pub child_order: Option<i32>,
 }
 
 impl std::convert::TryFrom<RefsItem> for NewItem {
@@ -216,7 +221,8 @@ impl std::convert::TryFrom<RefsItem> for NewItem {
         journal: item.journal,
         todo: item.todo,
         cal: item.cal,
-        user_id: item.user_id
+        user_id: item.user_id,
+        child_order: item.child_order,
       })
     } else {
       Err(TDError::ParseError(String::from(
@@ -249,7 +255,9 @@ impl From<Item> for RefsItem {
       user_id: item.user_id,
 
       references: vec![],
-      tags: vec![]
+      tags: vec![],
+
+      child_order: Some(0),
     };
   }
 }

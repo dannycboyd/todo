@@ -47,7 +47,7 @@ pub enum TDError {
   ConnectionError(String),
   NoneError,
   SerializeError,
-  Quit
+  Quit,
 }
 
 impl std::error::Error for TDError {
@@ -84,7 +84,7 @@ impl error::ResponseError for TDError {
 
   fn status_code(&self) -> StatusCode {
     match self {
-      _ => StatusCode::BAD_REQUEST
+      _ => StatusCode::BAD_REQUEST,
     }
   }
 }
@@ -187,6 +187,8 @@ pub trait ItemTrait2 {
 }
 
 // TESTING_TODO: this should get a test
+// note: good grief trying to write a test for this got me pulling my hair out.
+// maybe replace with this https://github.com/actix/examples/blob/master/json/json_decode_error/src/main.rs
 type TodoResult<T> = Result<T, actix_web::error::Error>;
 const MAX_SIZE: usize = 262_144; // get this from env somehow?
 use serde::de::DeserializeOwned;
@@ -211,4 +213,86 @@ pub async fn parse_json<T: DeserializeOwned>(mut payload: web::Payload) -> TodoR
     let res = format!("Invalid upload request: {}", e);
     actix_web::error::ErrorBadRequest(res)
   })
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::models::item::RefsItem;
+
+  use actix_web::{http, test, App};
+
+  fn get_new_refs_item(title: &str) -> RefsItem {
+    RefsItem {
+      id: None,
+      created_at: None,
+      updated_at: None,
+      start_d: None,
+      end_d: None,
+      repeats: None,
+      title: Some(String::from(title)),
+      note: None,
+      marked_done: None,
+      deleted: None,
+      parent_id: None,
+      journal: None,
+      todo: None,
+      cal: None,
+      user_id: None,
+      references: vec![],
+      tags: vec![],
+      child_order: None,
+    }
+  }
+
+  async fn test_parse_refs_item(body: web::Payload) -> Result<HttpResponse, http::Error> {
+    let foo = parse_json::<RefsItem>(body).await;
+    Ok(match foo {
+      Ok(item) => {
+        let expected_item = get_new_refs_item("test_item");
+        assert_eq!(expected_item.title, item.title); // ehhhhh this should be a more real test but w.e
+        HttpResponse::Ok().finish()
+      }
+      Err(e) => {
+        println!("help");
+        HttpResponse::InternalServerError().finish()
+      }
+    })
+  }
+
+  #[actix_rt::test]
+  async fn test_parse_item() {
+    // make a web::Payload with some json inside it
+    // this is the clunkiest piece ever, all I want to do is construct a web::Payload BUT THERE'S NO WAY TO DO THAT so I gotta stand up the whole
+    // actix server harness and run it like a little server in order to even check if this function works! At this rate why bother, just test one of the endpoints with a mocked actions handler
+    let item_json_string =
+      String::from("{\"title\":\"test_item\", \"references\": [], \"tags\": []}");
+    let mut app =
+      test::init_service(App::new().route("/", web::get().to(test_parse_refs_item))).await;
+
+    let req = test::TestRequest::get()
+      .uri("/")
+      .set_payload(item_json_string)
+      .to_request();
+    let resp = test::call_service(&mut app, req).await;
+    assert!(resp.status().is_success());
+    // assert_eq!(resp.status_code)
+  }
+
+  #[actix_rt::test]
+  async fn test_parse_item_fail() {
+    // this string can't be parsed as a RefsItem, so the test expects to see an error
+    // this error should be a client error, because the data is bad, not the server
+    let item_json_string =
+      String::from("{\"fail\": \"there's no references or tags on this item, so it will fail\" }");
+    let mut app =
+      test::init_service(App::new().route("/", web::get().to(test_parse_refs_item))).await;
+
+    let req = test::TestRequest::get()
+      .uri("/")
+      .set_payload(item_json_string)
+      .to_request();
+    let resp = test::call_service(&mut app, req).await;
+    assert!(resp.status().is_server_error());
+  }
 }

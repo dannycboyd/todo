@@ -20,7 +20,9 @@ pub struct NewItemTz {
   pub user_id: Option<i32>,
 
   pub tags: Vec<String>,
-  pub refs: Vec<i32>
+  pub refs: Vec<i32>,
+
+  pub child_order: Option<i32>
 }
 
 // I don't understand how this type signature works, it feels like I'm casting the type backwards from the argument? is that allowed? Compiler says it's ok so ¯\_(ツ)_/¯
@@ -43,7 +45,8 @@ impl From<NewItemTz> for NewItem {
       journal: old_item.journal,
       todo: old_item.todo,
       cal: old_item.cal,
-      user_id: old_item.user_id
+      user_id: old_item.user_id,
+      child_order: old_item.child_order
     }
   }
 }

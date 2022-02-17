@@ -1,5 +1,5 @@
 use actix_web::{HttpResponse, web, Error};
-use crate::models::reference::NewItemRef;
+use crate::models::reference::{NewItemRef, UpdatedItemRef};
 use crate::{DbPool, get_pool_connection, parse_json};
 use crate::actions::item::{insert_reference, delete_references, delete_child_ref};
 
@@ -10,9 +10,11 @@ pub async fn post_references(
 ) -> Result<HttpResponse, Error> {
   let conn = get_pool_connection(pool);
 
-  let reference = parse_json::<NewItemRef>(payload).await?;
+  let reference = parse_json::<UpdatedItemRef>(payload).await?;
+  let child_order = reference.child_order;
+  let reference = reference.item_ref;
 
-  let updated_item = web::block(move || insert_reference(reference, &conn))
+  let updated_item = web::block(move || insert_reference(reference, child_order, &conn))
     .await
     .map_err(|e| {
       eprintln!("{}", e);

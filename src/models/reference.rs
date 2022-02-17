@@ -16,6 +16,12 @@ pub struct ItemRef {
   pub updated_at: NaiveDateTime
 }
 
+#[derive(Deserialize, Debug)]
+pub struct UpdatedItemRef {
+  pub child_order: i32,
+  pub item_ref: NewItemRef
+}
+
 #[derive(Insertable, Deserialize, Debug, AsChangeset, Clone)]
 #[table_name = "item_references"]
 pub struct NewItemRef {
