@@ -47,7 +47,7 @@ pub enum TDError {
   ConnectionError(String),
   NoneError,
   SerializeError,
-  Quit,
+  Quit
 }
 
 impl std::error::Error for TDError {
@@ -84,7 +84,7 @@ impl error::ResponseError for TDError {
 
   fn status_code(&self) -> StatusCode {
     match self {
-      _ => StatusCode::BAD_REQUEST,
+      _ => StatusCode::BAD_REQUEST
     }
   }
 }
@@ -241,7 +241,7 @@ mod tests {
       user_id: None,
       references: vec![],
       tags: vec![],
-      child_order: None,
+      child_order: None
     }
   }
 
@@ -253,7 +253,7 @@ mod tests {
         assert_eq!(expected_item.title, item.title); // ehhhhh this should be a more real test but w.e
         HttpResponse::Ok().finish()
       }
-      Err(e) => {
+      Err(_e) => {
         println!("help");
         HttpResponse::InternalServerError().finish()
       }

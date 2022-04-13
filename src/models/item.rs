@@ -43,7 +43,7 @@ pub struct Item {
   pub todo: bool,
   pub cal: bool,
   pub user_id: Option<i32>,
-  pub child_order: i32,
+  pub child_order: i32
 }
 
 impl Item {
@@ -143,7 +143,7 @@ impl NewItem {
       todo: None,
       cal: None,
       user_id: None,
-      child_order: None,
+      child_order: None
     }
   }
 }
@@ -200,7 +200,7 @@ pub struct RefsItem {
   pub references: Vec<crate::models::reference::ItemRef>,
   pub tags: Vec<crate::models::tags::Tag>,
 
-  pub child_order: Option<i32>,
+  pub child_order: Option<i32>
 }
 
 impl std::convert::TryFrom<RefsItem> for NewItem {
@@ -222,7 +222,7 @@ impl std::convert::TryFrom<RefsItem> for NewItem {
         todo: item.todo,
         cal: item.cal,
         user_id: item.user_id,
-        child_order: item.child_order,
+        child_order: item.child_order
       })
     } else {
       Err(TDError::ParseError(String::from(
@@ -257,7 +257,7 @@ impl From<Item> for RefsItem {
       references: vec![],
       tags: vec![],
 
-      child_order: Some(0),
+      child_order: Some(0)
     };
   }
 }

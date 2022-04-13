@@ -1,13 +1,14 @@
 use actix_web::{HttpResponse, web, Error};
 use crate::{DbPool, get_pool_connection};
 use crate::actions::item::{
-  delete_item_by_id, get_item_by_id, get_items, upsert_item, get_references_by_id
+  delete_item_by_id, get_item_by_id, get_items, upsert_item, get_references_by_id, shift_up,
+  shift_down
 };
 use crate::models::item::{ItemFilter, NewItem};
 use crate::models::incoming_item::NewItemTz;
 use crate::models::responses::{Response};
 
-use log::{error};
+use log::{debug, error};
 
 pub async fn get_items_handler(
   pool: web::Data<DbPool>,
@@ -117,6 +118,75 @@ pub async fn get_related_by_id(
       HttpResponse::NotFound().body(format!("No related items were found for ID {}", item_id));
     Ok(res)
   }
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct ShiftRequest {
+  dir: String
+}
+
+/**
+ * this struct is to be used for returning the results of a shift request
+ * item_one is the initial item
+ * target is the item which has had its child_order updated as a side effect
+ */
+#[derive(serde::Serialize)]
+struct ShiftResponse {
+  item_one: i32,
+  target: i32
+}
+
+impl From<(i32, i32)> for ShiftResponse {
+  fn from(result: (i32, i32)) -> ShiftResponse {
+    ShiftResponse {
+      item_one: result.0,
+      target: result.1
+    }
+  }
+}
+
+pub async fn shift_item_handler(
+  pool: web::Data<DbPool>,
+  item_id: web::Path<i32>,
+  query: web::Query<ShiftRequest>
+) -> Result<HttpResponse, Error> {
+  let conn = get_pool_connection(pool);
+  let item_id = item_id.into_inner();
+
+  Ok(match query.dir.to_lowercase().as_str() {
+    "up" => web::block(move || shift_up(item_id, &conn))
+      .await
+      .map(|result| HttpResponse::Ok().json(ShiftResponse::from(result)).into()),
+
+    "down" => web::block(move || shift_down(item_id, &conn))
+      .await
+      .map(|result| HttpResponse::Ok().json(ShiftResponse::from(result)).into()),
+    _ => Ok(HttpResponse::MethodNotAllowed().into())
+  }?)
+}
+
+pub async fn indent_item_handler(
+  pool: web::Data<DbPool>,
+  item_id: web::Path<i32>
+) -> Result<HttpResponse, Error> {
+  let _conn = get_pool_connection(pool);
+  let item_id = item_id.into_inner();
+
+  debug!("indent request - item id: {}", &item_id);
+
+  Ok(HttpResponse::Ok().into())
+}
+
+pub async fn outdent_item_handler(
+  pool: web::Data<DbPool>,
+  item_id: web::Path<i32>
+) -> Result<HttpResponse, Error> {
+  let _conn = get_pool_connection(pool);
+
+  let item_id = item_id.into_inner();
+  debug!("outdent request - item id: {}", &item_id);
+
+  Ok(HttpResponse::Ok().into())
 }
 
 #[derive(serde::Serialize)]

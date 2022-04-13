@@ -1,10 +1,7 @@
 use std::fmt;
-use actix_web::HttpResponse;
+use actix_web::{HttpResponse, ResponseError};
 use actix_web::http::{StatusCode};
-// use actix_http::{Response};
-
-// I want this to replace TDError
-//
+use std::error::Error;
 
 /*
   Useable in the server event loop
@@ -26,33 +23,15 @@ pub enum TDError {
 }
 */
 
-pub trait TodoError: fmt::Display + fmt::Debug {
-  fn generate_http_response(&self) -> HttpResponse;
-  fn status_code(&self) -> u16;
-}
+pub trait TodoError: fmt::Display + fmt::Debug + ResponseError + Error + Send {}
 
-// impl TodoError {}
-
-// impl fmt::Display for TodoError {
-//   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//     write!(f, "")
-//   }
-// }
-
+#[derive(Clone)]
 pub struct DefaultError {
   code: u16,
   body: String
 }
 
-impl TodoError for DefaultError {
-  fn generate_http_response(&self) -> HttpResponse {
-    HttpResponse::build(StatusCode::from_u16(self.code).unwrap()).body(format!("{}", self.body))
-  }
-
-  fn status_code(&self) -> u16 {
-    self.code
-  }
-}
+impl TodoError for DefaultError {}
 
 impl fmt::Display for DefaultError {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -70,18 +49,24 @@ impl fmt::Debug for DefaultError {
   }
 }
 
-/* ok this is something
-how do I want to handle this?
-many error structs which all handle their own thing
-a single type?
+impl ResponseError for DefaultError {
+  fn status_code(&self) -> StatusCode {
+    StatusCode::INTERNAL_SERVER_ERROR
+  }
 
-if there's an error with json response, maybe want to handle that
-  is this the case? idk
-  turn the regular into a json response?
-  what kind of errors am I getting?
-  the big ones are user error
-    bad request
-    bad Item data (duplicate title, wrong ID, dates in the wrong order?)
-      be specific about this
+  fn error_response(&self) -> HttpResponse {
+    HttpResponse::InternalServerError().into()
+  }
+}
 
-*/
+impl Error for DefaultError {
+  fn source(&self) -> Option<&(dyn Error + 'static)> {
+    None
+  }
+}
+
+impl From<DefaultError> for Box<dyn TodoError> {
+  fn from(e: DefaultError) -> Box<dyn TodoError + 'static> {
+    Box::new(e)
+  }
+}

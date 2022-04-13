@@ -4,7 +4,7 @@ pub mod items;
 pub mod references;
 pub mod user;
 use crate::routes::items::*;
-use crate::routes::references::*;
+// use crate::routes::references::*;
 use crate::routes::user::*;
 
 // route setup happens here
@@ -34,12 +34,14 @@ pub fn config(cfg: &mut web::ServiceConfig) {
       .service(
         // /items/{item_id}
         web::scope("/{item_id}")
+          .service(web::resource("/outdent").route(web::get().to(outdent_item_handler)))
+          .service(web::resource("/shift").route(web::get().to(shift_item_handler)))
+          .service(web::resource("/indent").route(web::get().to(indent_item_handler))) // .service(web::resource("/related").route(web::get().to(get_related_by_id)))
           .service(
             web::resource("")
               .route(web::get().to(get_item_by_id_handler))
               .route(web::delete().to(delete_item))
           )
-          .service(web::resource("/related").route(web::get().to(get_related_by_id)))
       )
   );
   cfg.service(
@@ -47,13 +49,13 @@ pub fn config(cfg: &mut web::ServiceConfig) {
       .service(web::resource("new").route(web::post().to(create_user_handler)))
       .service(web::resource("login").route(web::get().to(login_user_handler)))
   );
-  cfg.service(
-    web::scope("/references")
-      .service(
-        web::resource("").route(web::post().to(post_references)) // .route(web::delete().to(delete_references_handler))
-      )
-      .service(
-        web::resource("child_id/{child_id}").route(web::delete().to(delete_child_refs_handler))
-      )
-  );
+  // cfg.service(
+  //   web::scope("/references")
+  //     .service(
+  //       web::resource("").route(web::post().to(post_references)) // .route(web::delete().to(delete_references_handler))
+  //     )
+  //     .service(
+  //       web::resource("child_id/{child_id}").route(web::delete().to(delete_child_refs_handler))
+  //     )
+  // );
 }

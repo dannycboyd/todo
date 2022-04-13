@@ -6,6 +6,9 @@ use crate::models::reference::{NewItemRef, ItemRef};
 use crate::models::tags::{Tag, NewItemTag};
 use crate::cal::occurs_between;
 use crate::TaskLike;
+use crate::util::child_order_range_error::ChildOrderRangeError;
+use crate::util::diesel_error::DieselError;
+use crate::util::errors::TodoError;
 
 // this is a big function. How can I break it up into something smaller?
 pub fn get_items(
@@ -262,13 +265,14 @@ pub fn upsert_item(
   let inserted_item = our_query.get_result::<Item>(conn)?;
   let mut inserted_item = RefsItem::from(inserted_item);
 
-  println!("{:?}", references);
-  if references.len() > 0 {
-    match set_references_for_parent(references, inserted_item.id.unwrap(), conn) {
-      Ok(refs) => inserted_item.references = refs,
-      Err(e) => eprintln!("an error occurred! {}", e)
-    }
-  }
+  // REMOVE REFS
+  // println!("{:?}", references);
+  // if references.len() > 0 {
+  //   match set_references_for_parent(references, inserted_item.id.unwrap(), conn) {
+  //     Ok(refs) => inserted_item.references = refs,
+  //     Err(e) => eprintln!("an error occurred! {}", e)
+  //   }
+  // }
 
   if tags.len() > 0 {
     match insert_tags(tags, inserted_item.get_id(), conn) {
@@ -278,6 +282,172 @@ pub fn upsert_item(
   }
 
   Ok(inserted_item)
+}
+
+// this error just needs to contain both diesel errors and user input errors
+/**
+ * Returns the IDs of the two items whose `child_order`s got swapped
+ */
+pub fn shift_up(item_id: i32, conn: &PgConnection) -> Result<(i32, i32), Box<dyn TodoError>> {
+  use crate::schema::items::dsl::*;
+
+  let item1 = items
+    .filter(id.eq(item_id))
+    .first::<Item>(conn)
+    .map_err(DieselError::from)?;
+
+  if item1.child_order < 1 {
+    return Err(Box::new(ChildOrderRangeError {}));
+  }
+
+  let trans = conn
+    .build_transaction()
+    .run::<(i32, i32), diesel::result::Error, _>(|| {
+      let item2_id = items
+        .filter(child_order.eq(item1.child_order - 1))
+        .filter(parent_id.eq(item1.parent_id))
+        .select(id)
+        .first::<i32>(conn)?;
+
+      // calls to diesel inside the transaction don't need to map_err because the transaction itself has a map_err on it
+      diesel::update(items)
+        .set(child_order.eq(-1))
+        .filter(id.eq(item2_id))
+        .execute(conn)?;
+      diesel::update(items)
+        .set(child_order.eq(item1.child_order - 1))
+        .filter(id.eq(item1.id))
+        .execute(conn)?;
+      diesel::update(items)
+        .set(child_order.eq(item1.child_order))
+        .filter(id.eq(item2_id))
+        .execute(conn)?;
+      Ok((item_id, item2_id))
+    })
+    .map_err(DieselError::from)?; // this does some funky stuff with type inference and box<dyn TodoError> but it's FINE it's FINE
+  Ok(trans)
+}
+
+/**
+ * Returns the IDs of the two items whose `child_order`s got swapped
+ */
+pub fn shift_down(item_id: i32, conn: &PgConnection) -> Result<(i32, i32), Box<dyn TodoError>> {
+  use crate::schema::items::dsl::*;
+
+  let item1 = items
+    .filter(id.eq(item_id))
+    .first::<Item>(conn)
+    .map_err(DieselError::from)?;
+
+  let item2 = items
+    .filter(parent_id.eq(item1.parent_id))
+    .order_by(child_order.desc())
+    .first::<Item>(conn)
+    .map_err(DieselError::from)?;
+  if item1.child_order > item2.child_order {
+    return Err(Box::new(ChildOrderRangeError {}));
+  }
+  let trans = conn
+    .build_transaction()
+    .run::<(i32, i32), diesel::result::Error, _>(|| {
+      let item1 = items.filter(id.eq(item_id)).first::<Item>(conn)?;
+
+      diesel::update(items)
+        .filter(id.eq(item2.id))
+        .set(child_order.eq(-1))
+        .execute(conn)?;
+      diesel::update(items)
+        .filter(id.eq(item1.id))
+        .set(child_order.eq(item2.child_order))
+        .execute(conn)?;
+      diesel::update(items)
+        .filter(id.eq(item2.id))
+        .set(child_order.eq(item1.child_order))
+        .execute(conn)?;
+      Ok((item1.id, item2.id))
+    })
+    .map_err(DieselError::from)?;
+  Ok(trans)
+}
+
+/**
+ * indent_item
+ * takes an `item_id` for item a, finds its immediate neighbor b, and assigns b's item_id to a->parent_id
+ */
+pub fn indent_item(item_a_id: i32, conn: &PgConnection) -> Result<Item, diesel::result::Error> {
+  use crate::schema::items::dsl::*;
+  use diesel::expression::count::count;
+  let item_a = items.filter(id.eq(item_a_id)).first::<Item>(conn)?;
+
+  // get the first item with child_order less than a with the same parent.
+  let item_b = items
+    .filter(parent_id.eq(item_a.parent_id))
+    .filter(child_order.lt(item_a.child_order))
+    .order_by(child_order.desc())
+    .first::<Item>(conn)?;
+
+  // get the # of children that B has
+  let count: i64 = items
+    .select(count(id))
+    .filter(parent_id.eq(item_b.id))
+    .first(conn)?;
+
+  diesel::update(items)
+    .filter(id.eq(item_a.id))
+    .set(child_order.eq(count as i32))
+    .get_result::<Item>(conn)
+}
+
+/**
+ * outdent_item
+ * takes an `item_id` for item a, finds its parent b, then makes item a siblings of item b, adjusting all the child_order values somehow
+ */
+pub fn outdent_item(item_a_id: i32, conn: &PgConnection) -> Result<Item, diesel::result::Error> {
+  use crate::schema::items::dsl::*;
+
+  let item_a = items.filter(id.eq(item_a_id)).first::<Item>(conn)?;
+
+  match item_a.parent_id {
+    None => return Err(diesel::result::Error::NotFound),
+    Some(item_a_parent_id) => {
+      // fails if no parent, is that ok
+      let item_b = items.filter(id.eq(item_a_parent_id)).first::<Item>(conn)?;
+
+      conn
+        .build_transaction()
+        .run::<Item, diesel::result::Error, _>(|| {
+          // update items with parent_id.eq(item_b.parent_id) so that child_order > item_b.child_order += 1
+          // make room for item A
+          diesel::update(items)
+            .filter(parent_id.eq(item_b.parent_id)) // OK if item_b doesn't have a parent :)
+            .filter(child_order.gt(item_b.child_order))
+            .set(child_order.eq(child_order + 1))
+            .execute(conn)?;
+
+          // update children of item B such that any with child_order > old a.child_order get decremented
+          diesel::update(items)
+            .filter(parent_id.eq(item_a_parent_id))
+            .filter(child_order.lt(item_a.child_order))
+            .set(child_order.eq(child_order - 1))
+            .execute(conn)?;
+
+          // update item A with new parent and child order values
+          diesel::update(items)
+            .filter(id.eq(item_a.id))
+            .set((
+              parent_id.eq(item_b.parent_id),
+              child_order.eq(item_b.child_order)
+            ))
+            .get_result::<Item>(conn) // this returns
+
+          // the client needs to put A in the right place (new parent ID takes care of this, new child_order takes care of this)
+          // the client doesn't care about updating B's children, they can have gaps, that's OK?
+          // except if we cut a hole in the children of B and then give B a new child, then the items might have collisions?
+          // if you add children to an item, the client needs to ask for the updated list of children for that item. this
+          // when I'm adding an item as a child, I have to make sure that I'm not getting the length, but incrementing the value of the last child OR i have to normalize them
+        })
+    }
+  }
 }
 
 /*
@@ -317,7 +487,7 @@ pub fn insert_tags(
     .get_results::<Tag>(conn)
 }
 
-/*
+/* REMOVE REFS
  * test for set_references_for_parent
  *
  * expected behavior:
@@ -375,7 +545,7 @@ pub fn set_references_for_parent(
   result
 }
 
-/*
+/* REMOVE REFS
  * given a reference `NewItemRef`, validates that it contains both parts before inserting it, and updating the appropriate child item
  * Returns Result<Item, diesel::result::Error> containing either the updated child item
  * Returns Err(NotFound) if either part is missing
@@ -401,7 +571,10 @@ pub fn insert_reference(
       {
         use crate::schema::items::dsl::*;
         use diesel::expression::count::count;
-        let count: i64 = items.select(count(id)).filter(parent_id.eq(origin_value)).first(conn)?;
+        let count: i64 = items
+          .select(count(id))
+          .filter(parent_id.eq(origin_value))
+          .first(conn)?;
         let count = count as i32;
         // if new_order < 0, set to 0
         // if new_order > count, set to count
@@ -412,10 +585,7 @@ pub fn insert_reference(
         };
 
         let updated_child = diesel::update(items.filter(id.eq(child_value)))
-          .set((
-            parent_id.eq(origin_value),
-            child_order.eq(new_order)
-          ))
+          .set((parent_id.eq(origin_value), child_order.eq(new_order)))
           .get_result::<Item>(conn)?;
         Ok(updated_child)
       }
@@ -445,19 +615,27 @@ pub fn delete_child_ref(
   conn: &PgConnection
 ) -> Result<Item, diesel::result::Error> {
   let mut old_parent_id: i32 = 0;
-  {
-    use crate::schema::item_references::dsl::*;
-    old_parent_id = item_references.select(origin_id).filter(child_id.eq(target_id)).first(conn)?;
-    let _del_query =
-      diesel::delete(item_references.filter(child_id.eq(target_id))).execute(conn)?;
-  }
+  // {
+  //   use crate::schema::item_references::dsl::*;
+  //   old_parent_id = item_references.select(origin_id).filter(child_id.eq(target_id)).first(conn)?;
+  //   let _del_query =
+  //     diesel::delete(item_references.filter(child_id.eq(target_id))).execute(conn)?;
+  // }
   {
     use crate::schema::items::dsl::*;
     // get the old child_order location
-    let order_number: i32 = items.select(child_order).filter(id.eq(old_parent_id)).first(conn)?;
+    let order_number: i32 = items
+      .select(child_order)
+      .filter(id.eq(old_parent_id))
+      .first(conn)?;
     // using the child_order, increment every sibling below the current
-    diesel::update(items.filter(parent_id.is_null()).filter(child_order.ge(order_number))) // since we're deleting the reference (parent_id -> no parent id) filter using is_null
-    .set(child_order.eq(child_order + 1)).execute(conn)?;
+    diesel::update(
+      items
+        .filter(parent_id.is_null())
+        .filter(child_order.ge(order_number))
+    ) // since we're deleting the reference (parent_id -> no parent id) filter using is_null
+    .set(child_order.eq(child_order + 1))
+    .execute(conn)?;
     // now update the child_id on the item in question
     let item = diesel::update(items.filter(id.eq(target_id)))
       .set(parent_id.eq(None::<i32>))
@@ -480,6 +658,7 @@ pub fn delete_item_by_id(item_id: i32, conn: &PgConnection) -> Result<(), diesel
   Ok(())
 }
 
+// REMOVE REFS
 pub fn get_parents_by_child_id(
   item_id: i32,
   conn: &PgConnection
@@ -495,6 +674,7 @@ pub fn get_parents_by_child_id(
   Ok(data)
 }
 
+//REMOVE REFS
 pub fn get_children_by_parent_id(
   item_id: i32,
   conn: &PgConnection
